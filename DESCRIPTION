@@ -1,15 +1,23 @@
 Package: varde
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Variance Decomposition Functions
+Version: 0.0.1
+Authors@R: 
+    person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre"))
+Description: Functions for doing variance decomposition, e.g., for conducting
+    generalizability theory studies or estimating intraclass correlations.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
 URL: https://github.com/jmgirard/varde
 BugReports: https://github.com/jmgirard/varde/issues
+Suggests: 
+    cmdstanr,
+    rstan,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports: 
+    brms,
+    lme4
