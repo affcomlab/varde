@@ -1,9 +1,16 @@
 check_convergence <- function(model) {
-  if(any(abs(brms::rhat(model) - 1) > .1)) {
-    return(FALSE)
-  }
+  UseMethod("check_convergence")
+}
 
-  TRUE
+#' @method check_convergence lmerMod
+check_convergence.lmerMod <- function(model) {
+  warn <- model@optinfo$conv$lme4$messages
+  is.null(warn) || !grepl('failed to converge', warn)
+}
+
+#' @method check_convergence brmsfit
+check_convergence.brmsfit <- function(model) {
+  !any(abs(brms::rhat(model) - 1) > .1)
 }
 
 post_mode <- function(x) {
