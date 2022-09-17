@@ -1,4 +1,4 @@
-test_that("works with one component", {
+test_that("works for lmer with one component", {
   fit_lmer <- lme4::lmer(
     formula = Petal.Width ~ 1 + (1 | Species),
     data = datasets::iris

@@ -5,14 +5,15 @@ Version: 0.0.1
 Authors@R: 
     person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre"))
 Description: Functions for doing variance decomposition, e.g., for
-    conducting generalizability theory studies or estimating intraclass
-    correlations.
+    conducting generalizability studies or estimating intraclass correlations.
 License: MIT + file LICENSE
 URL: https://github.com/jmgirard/varde
 BugReports: https://github.com/jmgirard/varde/issues
 Imports: 
     assertthat,
     brms,
+    forcats,
+    ggforce,
     ggplot2,
     lme4,
     rlang,

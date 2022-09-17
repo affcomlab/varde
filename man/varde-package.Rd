@@ -6,7 +6,7 @@
 \alias{varde-package}
 \title{varde: Variance Decomposition Functions}
 \description{
-Functions for doing variance decomposition, e.g., for conducting generalizability theory studies or estimating intraclass correlations.
+Functions for doing variance decomposition, e.g., for conducting generalizability studies or estimating intraclass correlations.
 }
 \seealso{
 Useful links:

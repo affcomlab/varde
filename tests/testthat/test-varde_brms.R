@@ -1,4 +1,4 @@
-test_that("works with one component", {
+test_that("works for brms with one component", {
   testthat::skip_on_cran()
 
   fit_brms <- brms::brm(

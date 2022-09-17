@@ -19,14 +19,17 @@ varde.lmerMod <- function(model, ci = 0.95) {
   )
 
   # Construct output tibble
-  tibble(
-    component = c(names(summary(model)$varcor), "Residual"),
-    variance = vars_est,
-    lower = as.double(ci_theta[, 1])^2,
-    upper = as.double(ci_theta[, 2])^2,
-    percent = vars_est / sum(vars_est),
-    method = "lmer"
-  )
+  out <-
+    tibble(
+      component = c(names(summary(model)$varcor), "Residual"),
+      variance = vars_est,
+      lower = as.double(ci_theta[, 1])^2,
+      upper = as.double(ci_theta[, 2])^2,
+      percent = vars_est / sum(vars_est),
+      method = "lmer"
+    )
+
+  varde_res(out)
 }
 
 #' @method varde brmsfit
@@ -60,12 +63,25 @@ varde.brmsfit <- function(model, ci = 0.95) {
                     probs = ci + (1 - ci) / 2)
 
   # Construct output tibble
-  tibble(
-    component = colnames(vars),
-    variance = vars_map,
-    lower = vars_clo,
-    upper = vars_chi,
-    percent = vars_map / sum(vars_map),
-    method = "brms"
-  )
+  out <-
+    tibble(
+      component = colnames(vars),
+      variance = vars_map,
+      lower = vars_clo,
+      upper = vars_chi,
+      percent = vars_map / sum(vars_map),
+      method = "brms"
+    )
+
+  varde_res(out)
+}
+
+#' @exportClass verde_res
+new_varde_res <- function(x = tibble()) {
+  stopifnot(tibble::is_tibble(x))
+  structure(x, class = c("varde_res", class(x)))
+}
+
+varde_res <- function(x = tibble()) {
+  new_varde_res(x)
 }
