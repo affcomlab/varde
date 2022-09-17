@@ -9,21 +9,16 @@ plot.varde_res <- function(x, ...) {
       variance = x$variance,
       percent = x$percent,
       total = rep("Total\nVariance", nrow(x)),
-      label = paste0(
-        x$component,
-        "\n",
-        round(x$percent * 100, digits = 1),
-        "%"
+      label = ifelse(
+        x$percent > 0.02,
+        paste0(x$component, "\n", round(x$percent * 100, digits = 1), "%"),
+        x$component
       )
     ) |>
     ggforce::gather_set_data(c("total", "label"))
 
   df$x <- factor(df$x, levels = c("total", "label"))
-  df$label <- forcats::fct_relevel(
-    factor(df$label),
-    df[[nrow(df), "y"]],
-    after = Inf
-  )
+  df$label <- forcats::fct_reorder(df$label, df$percent, .desc = TRUE)
   df$y <- factor(df$y, levels = c("Total\nVariance", levels(df$label)))
 
   ggplot2::ggplot(

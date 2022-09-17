@@ -1,0 +1,81 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# varde
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of varde is to provide functions for decomposing the variance in multilevel models, e.g., for g studies in generalizability theory or intraclass correlation analyses in interrater reliability.
+
+## Installation
+
+You can install the development version of varde from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("jmgirard/varde")
+```
+
+## Example
+
+In the `ppa` example dataset, 72 human "raters" judged the perceived physical attractiveness of 36 human "targets" in 6 different conditions (i.e., stimulus "types").
+
+### Frequentist estimation using \{lme4\}
+
+```{r res_1a, cache=TRUE}
+library(varde)
+fit_1a <- lme4::lmer(
+  formula = Score ~ 1 + (1 | Target) + (1 | Rater),
+  data = ppa
+)
+res_1a <- varde(fit_1a, ci = 0.95)
+res_1a
+plot(res_1a)
+```
+
+### Bayesian estimation using \{brms\}
+
+```{r res_1b, message=FALSE, cache=TRUE}
+fit_1b <- brms::brm(
+  formula = Score ~ 1 + (1 | Target) + (1 | Rater),
+  data = ppa,
+  chains = 4,
+  cores = 4,
+  init = "random",
+  iter = 10000,
+  refresh = 0,
+  silent = 2,
+  seed = 2022
+)
+res_1b <- varde(fit_1b, ci = 0.95)
+res_1b
+plot(res_1b)
+```
+
+### More complicated example using \{lme4\}
+
+```{r res_2, cache=TRUE}
+fit_2 <- lme4::lmer(
+  formula = Score ~ 1 + (1 | Target) + (1 | Rater) + (1 | Type) +
+    (1 | Target:Rater) + (1 | Target:Type) + (1 | Rater:Type),
+  data = ppa
+)
+res_2 <- varde(fit_2, ci = NULL)
+res_2
+plot(res_2)
+```
+
+
