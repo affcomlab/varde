@@ -6,6 +6,8 @@ varde <- function(model, ci = 0.95) {
 #' @method varde lmerMod
 #' @export
 varde.lmerMod <- function(model, ci = 0.95) {
+  assertthat::assert_that(check_convergence(model) == TRUE)
+  assertthat::assert_that(rlang::is_double(ci, n = 1))
 
   # Calculate point estimates
   vars_est <- c(as.double(summary(model)$varcor), summary(model)$sigma^2)
