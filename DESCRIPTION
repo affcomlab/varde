@@ -11,8 +11,11 @@ License: MIT + file LICENSE
 URL: https://github.com/jmgirard/varde
 BugReports: https://github.com/jmgirard/varde/issues
 Imports: 
+    assertthat,
     brms,
+    ggplot2,
     lme4,
+    rlang,
     tibble
 Suggests: 
     cmdstanr,
