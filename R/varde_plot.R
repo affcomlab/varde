@@ -10,9 +10,9 @@ plot.varde_res <- function(x, ...) {
       percent = x$percent,
       total = rep("Total\nVariance", nrow(x)),
       label = ifelse(
-        x$percent > 0.02,
+        x$percent > 0.10,
         paste0(x$component, "\n", round(x$percent * 100, digits = 1), "%"),
-        x$component
+        paste0(x$component, " (", round(x$percent * 100, digits = 1), "%)")
       )
     ) |>
     ggforce::gather_set_data(c("total", "label"))
