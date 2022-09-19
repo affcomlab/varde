@@ -36,8 +36,8 @@ plot.varde_res <- function(x, ...) {
     ) +
     ggforce::geom_parallel_sets_labels(
       size = 4,
-      hjust = c(1, 0, 0, 0),
-      nudge_x = c(-0.1, 0.1, 0.1, 0.1),
+      hjust = c(1, rep(0, times = nrow(x))),
+      nudge_x = c(-0.1, rep(0.1, times = nrow(x))),
       angle = 0
     ) +
     ggplot2::scale_fill_discrete() +
