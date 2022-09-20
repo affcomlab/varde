@@ -56,6 +56,7 @@ fit_1b <- brms::brm(
   chains = 4,
   cores = 4,
   init = "random",
+  warmup = 5000,
   iter = 10000,
   refresh = 0,
   silent = 2,
@@ -92,7 +93,7 @@ res_2
 #> 3 Target:Type    0.0523    NA    NA 0.0153  lmer  
 #> 4 Rater          1.01      NA    NA 0.295   lmer  
 #> 5 Target         0.815     NA    NA 0.238   lmer  
-#> 6 Type           0.0264    NA    NA 0.00771 lmer  
+#> 6 Type           0.0264    NA    NA 0.00772 lmer  
 #> 7 Residual       0.564     NA    NA 0.165   lmer
 plot(res_2)
 ```

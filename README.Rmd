@@ -55,6 +55,7 @@ fit_1b <- brms::brm(
   chains = 4,
   cores = 4,
   init = "random",
+  warmup = 5000,
   iter = 10000,
   refresh = 0,
   silent = 2,
