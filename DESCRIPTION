@@ -13,7 +13,7 @@ Imports:
     assertthat,
     brms,
     forcats,
-    ggforce,
+    ggforce (>= 0.4.0),
     ggplot2,
     lme4,
     rlang,
