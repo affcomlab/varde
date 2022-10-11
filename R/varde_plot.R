@@ -3,7 +3,7 @@
 #' @importFrom graphics plot
 plot.varde_res <- function(x, ...) {
   df <-
-    tibble(
+    tibble::tibble(
       id = 1:nrow(x),
       component = x$component,
       variance = x$variance,
@@ -15,9 +15,8 @@ plot.varde_res <- function(x, ...) {
         paste0(x$component, " (", round(x$percent * 100, digits = 1), "%)")
       )
     ) |>
-    ggforce::gather_set_data(c("total", "label"))
+    ggforce::gather_set_data(x = 5:6, id_name = "id")
 
-  df$x <- factor(df$x, levels = c("total", "label"))
   df$label <- forcats::fct_reorder(df$label, df$percent, .desc = TRUE)
   df$y <- factor(df$y, levels = c("Total\nVariance", levels(df$label)))
 
