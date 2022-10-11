@@ -1,7 +1,7 @@
 #' @export plot.varde_res
 #' @export
 #' @importFrom graphics plot
-plot.varde_res <- function(x, ...) {
+plot.varde_res <- function(x, font_size, xlim = c(4.75, 6.5), ...) {
   df <-
     tibble::tibble(
       id = 1:nrow(x),
@@ -31,11 +31,12 @@ plot.varde_res <- function(x, ...) {
       axis.width = 0.1
     ) +
     ggforce::geom_parallel_sets_labels(
-      size = 4,
+      size = font_size,
       hjust = c(1, rep(0, times = nrow(x))),
       nudge_x = c(-0.1, rep(0.1, times = nrow(x))),
       angle = 0
     ) +
+    ggplot2::coord_cartesian(xlim = xlim) +
     ggplot2::scale_fill_discrete() +
     ggplot2::theme_void()
 }
