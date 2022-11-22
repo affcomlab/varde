@@ -16,8 +16,8 @@ calc_khat <- function(x, ...) {
 }
 
 #' @export
-calc_vs <- function(x, ...) {
-  UseMethod("calc_vs")
+calc_ks <- function(x, ...) {
+  UseMethod("calc_ks")
 }
 
 #' @export
@@ -27,24 +27,39 @@ calc_q <- function(x, ...) {
 
 # S3 Methods --------------------------------------------------------------
 
-## calc_vs methods
+## calc_ks methods
 
-#' @method calc_vs varde_srm
+#' @method calc_ks varde_srm
 #' @export
-calc_vs.varde_srm <- function(srm) {
+calc_ks.varde_srm <- function(srm) {
+
+  # Calculate ks from subject-by-rater matrix
   ks <- rowSums(srm)
-  new_ks(ks)
+
+  # Assign the varde_ks class
+  ks <- new_ks(ks)
+
+  # Return ks
+  ks
+
 }
 
-#' @method calc_vs data.frame
+#' @method calc_ks data.frame
 #' @export
-calc_vs.data.frame <- function(.data,
+calc_ks.data.frame <- function(.data,
                                subject = "subject",
                                rater = "rater",
                                score = "score") {
 
+  # Create subject-by-rater matrix from .data
   srm <- create_srm(.data, subject = subject, rater = rater, score = score)
-  calc_vs(srm)
+
+  # Calculate ks from the subject-by-rater matrix
+  ks <- calc_ks(srm)
+
+  # Return ks
+  ks
+
 }
 
 ## calc_khat methods
@@ -52,11 +67,13 @@ calc_vs.data.frame <- function(.data,
 #' @method calc_khat varde_ks
 #' @export
 calc_khat.varde_ks <- function(ks) {
-  # Remove any subjects not rated by any raters
-  ks <- ks[ks != 0]
 
   # Calculate harmonic mean
-  length(ks) / sum(1 / ks)
+  khat <- length(ks) / sum(1 / ks)
+
+  # Return khat
+  khat
+
 }
 
 #' @method calc_khat varde_srm
@@ -67,7 +84,11 @@ calc_khat.varde_srm <- function(srm) {
   ks <- calc_ks(srm)
 
   # Calculate khat from raters per subject
-  calc_khat(ks)
+  khat <- calc_khat(ks)
+
+  # Return khat
+  khat
+
 }
 
 #' @method calc_khat data.frame
@@ -82,7 +103,10 @@ calc_khat.data.frame <- function(.data,
   srm <- create_srm(.data, subject = subject, rater = rater, score = score, ...)
 
   # Calculate khat from subject-by-rater matrix
-  calc_khat(srm)
+  khat <- calc_khat(srm)
+
+  # Return khat
+  khat
 
 }
 
@@ -94,10 +118,6 @@ calc_q.varde_srm <- function(srm) {
 
   # How many raters per subject?
   ks <- calc_ks(srm = srm)
-
-  # Remove any subjects not rated by anyone
-  srm <- srm[ks != 0, ]
-  ks <- ks[ks != 0]
 
   # How many subjects?
   n <- nrow(srm)
@@ -137,7 +157,11 @@ calc_q.varde_srm <- function(srm) {
   total_overlap <- sum(apply(X = spairs, MARGIN = 2, FUN = pair_overlap, srm))
 
   # Calculate the proportion of non-overlap across subjects and raters
-  (1 / khat) - (total_overlap / (n * (n - 1)))
+  q <- (1 / khat) - (total_overlap / (n * (n - 1)))
+
+  # Return q
+  q
+
 }
 
 #' @method calc_q data.frame
@@ -152,5 +176,9 @@ calc_q.data.frame <- function(.data,
   srm <- create_srm(.data, subject = subject, rater = rater, score = score, ...)
 
   # Calculate q from subject-by-rater matrix
-  calc_q(srm = srm)
+  q <- calc_q(srm = srm)
+
+  # Return q
+  q
+
 }
