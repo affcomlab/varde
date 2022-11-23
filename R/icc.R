@@ -76,3 +76,89 @@ create_srm <- function(.data,
 
   new_srm(srm)
 }
+
+#' @export
+calc_icc <- function(x, ...) {
+  UseMethod("calc_icc")
+}
+
+#' @method calc_icc data.frame
+#' @export
+calc_icc.data.frame <- function(.data,
+                     subject = "subject",
+                     rater = "rater",
+                     score = "score",
+                     method = c("lme4", "brms"),
+                     unit = c("single", "average"),
+                     ...) {
+
+  method <- match.arg(method)
+  unit <- match.arg(unit)
+
+  # Remove all subjects that had no raters
+  ks <- calc_ks(.data, subject = subject, rater = rater, score = score)
+  .data <- .data[.data[[subject]] %in% names(ks[ks > 0]), ]
+  # TODO: Check if we should remove ks == 1 as well as ks == 0
+
+  # Construct mixed-effects formula
+  formula <- paste0(score, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')')
+
+  if (method == "lme4") {
+    fit <- lme4::lmer(
+      formula = formula,
+      data = .data
+    )
+  } else if (method == "brms") {
+    fit <- brms::brm(
+      formula = formula,
+      data = .data,
+      chains = 4,
+      cores = 4,
+      init = "random",
+      refresh = 0,
+      silent = 2,
+      ...
+    )
+  }
+
+  res <- varde(fit)
+
+  vs <- res[[which(res$component == subject), "variance"]]
+  vr <- res[[which(res$component == rater), "variance"]]
+  vsr <- res[[which(res$component == "Residual"), "variance"]]
+
+  srm <- create_srm(.data, subject = subject, rater = rater, score = score)
+  khat <- calc_khat(srm)
+  q <- calc_q(srm)
+
+  if (unit == "single") {
+    ve_abs <- (vr + vsr)
+    ve_rel <- (q * vr) + vsr
+  } else if (unit == "average") {
+    ve_abs <- (vr + vsr) / khat
+    ve_rel <- ((q * vr) + vsr) / khat
+  }
+
+  icc_abs <- vs / (vs + ve_abs)
+  icc_rel <- vs / (vs + ve_rel)
+
+  out <- c(ICC_abs = icc_abs, ICC_rel = icc_rel)
+
+  out
+
+}
+
+#' @method calc_icc varde_res
+#' @export
+calc_icc.varde_res <- function(res,
+                               subject = "subject",
+                               rater = "rater",
+                               ...) {
+
+  vs <- res[[which(res$component == subject), "variance"]]
+  vr <- res[[which(res$component == rater), "variance"]]
+  vsr <- res[[which(res$component == "Residual"), "variance"]]
+
+  # TODO: Need to calculate khat and q from data and save into varde_res
+
+}
