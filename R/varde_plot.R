@@ -3,7 +3,7 @@
 #' @importFrom graphics plot
 plot.varde_res <- function(x,
                            type = "river",
-                           font_size = 12,
+                           font_size = 10,
                            xlim = c(4.75, 6.5),
                            ...) {
 
@@ -44,7 +44,7 @@ plot.varde_res <- function(x,
         axis.width = 0.1
       ) +
       ggforce::geom_parallel_sets_labels(
-        size = font_size,
+        size = font_size / ggplot2::.pt,
         hjust = c(1, rep(0, times = nrow(summary_df))),
         nudge_x = c(-0.1, rep(0.1, times = nrow(summary_df))),
         angle = 0
