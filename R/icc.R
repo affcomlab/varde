@@ -16,43 +16,6 @@ icc_khat <- function(vs, vrins, khat) {
   vs / (vs + vrins / khat)
 }
 
-# Two-way ICCs ------------------------------------------------------------
-
-## crossed design, absolute error, single rating
-icc_a_1 <- function(vs, vr, vsr) {
-  vs / (vs + vr + vsr)
-}
-
-## crossed design, absolute error, average ratings, balanced number of raters
-icc_a_k <- function(vs, vr, vsr, k) {
-  vs / (vs + (vr + vsr) / k)
-}
-
-## crossed design, absolute error, average ratings, unbalanced number of raters
-icc_a_khat <- function(vs, vr, vsr, khat) {
-  vs / (vs + (vr + vsr) / khat)
-}
-
-## crossed design, relative error, single rating, complete data
-icc_c_1 <- function(vs, vsr) {
-  vs / (vs + vsr)
-}
-
-## crossed design, relative error, single rating, incomplete data
-icc_q_1 <- function(vs, vr, vsr, q) {
-  vs / (vs + (q * vr) + vsr)
-}
-
-## crossed design, relative error, average ratings, complete data
-icc_c_k <- function(vs, vsr, k) {
-  vs / (vs + vsr / k)
-}
-
-## crossed design, relative error, average ratings, incomplete data
-icc_q_khat <- function(vs, vr, vsr, q, khat) {
-  vs / (vs + (q * vr) + (vsr / khat))
-}
-
 # Helper functions --------------------------------------------------------
 
 create_srm <- function(.data,
@@ -77,6 +40,8 @@ create_srm <- function(.data,
   new_srm(srm)
 }
 
+# calc_icc() --------------------------------------------------------------
+
 #' @export
 calc_icc <- function(x, ...) {
   UseMethod("calc_icc")
@@ -88,77 +53,134 @@ calc_icc.data.frame <- function(.data,
                      subject = "subject",
                      rater = "rater",
                      score = "score",
-                     method = c("lme4", "brms"),
-                     unit = c("single", "average"),
+                     k = NULL,
+                     ci = 0.95,
+                     chains = 4,
+                     cores = 4,
+                     iter = 5000,
                      ...) {
 
-  method <- match.arg(method)
-  unit <- match.arg(unit)
+  assertthat::assert_that(rlang::is_null(k) || rlang::is_integerish(k, n = 1))
 
   # Remove all subjects that had no raters
   ks <- calc_ks(.data, subject = subject, rater = rater, score = score)
   .data <- .data[.data[[subject]] %in% names(ks[ks > 0]), ]
   # TODO: Check if we should remove ks == 1 as well as ks == 0
 
-  # Construct mixed-effects formula
-  formula <- paste0(score, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')')
-
-  if (method == "lme4") {
-    fit <- lme4::lmer(
-      formula = formula,
-      data = .data
-    )
-  } else if (method == "brms") {
-    fit <- brms::brm(
-      formula = formula,
-      data = .data,
-      chains = 4,
-      cores = 4,
-      init = "random",
-      refresh = 0,
-      silent = 2,
-      ...
-    )
+  # Remove all raters that had no subjects
+  ss <- calc_ss(.data, subject = subject, rater = rater, score = score)
+  .data <- .data[.data[[rater]] %in% names(ss[ss > 0]), ]
+  if (is.null(k)) {
+    k <- length(unique(.data[[rater]]))
   }
 
-  res <- varde(fit)
+  # Construct mixed-effects formula
+  twoway <- is_twoway(.data, subject, rater)
+  if (twoway) {
+    formula <- paste0(score, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')')
+  } else {
+    # TODO: Check if this is necessary
+    formula <- paste0(score, ' ~ 1 + (1 | ', subject, ')')
+  }
 
-  vs <- res[[which(res$component == subject), "variance"]]
-  vr <- res[[which(res$component == rater), "variance"]]
-  vsr <- res[[which(res$component == "Residual"), "variance"]]
+  # Fit Bayesian mixed-effects model
+  fit <- brms::brm(
+    formula = formula,
+    data = .data,
+    chains = chains,
+    cores = cores,
+    iter = iter,
+    init = "random",
+    ...
+  )
+
+  # Extract posterior draws from model
+  if (twoway) {
+    variables <- c(
+      paste0("sd_", subject, "__Intercept"),
+      paste0("sd_", rater, "__Intercept"),
+      "sigma"
+    )
+    variables_names <- c("Subject", "Rater", "Residual")
+  } else {
+    variables <- c(
+      paste0("sd_", subject, "__Intercept"),
+      "sigma"
+    )
+    variables_names <- c("Subject", "Residual")
+  }
+  sds <- brms::as_draws_matrix(
+    x = fit,
+    variable = variables,
+    inc_warmup = FALSE
+  )
+  colnames(sds) <- variables_names
+
+  # Convert estimates to variances
+  vars <- sds^2
+
+  vs <-  as.vector(vars[, "Subject"])
+  if (twoway) {
+    vr <- as.vector(vars[, "Rater"])
+  } else {
+    vr <- rep(NA_real_, length(vs))
+  }
+  vsr <- as.vector(vars[, "Residual"])
 
   srm <- create_srm(.data, subject = subject, rater = rater, score = score)
+
+  # Calculate the harmonic mean of the number of raters per subject
   khat <- calc_khat(srm)
+
+  # Calculate the proportion of non-overlap for raters and subjects
   q <- calc_q(srm)
 
-  if (unit == "single") {
-    ve_abs <- (vr + vsr)
-    ve_rel <- (q * vr) + vsr
-  } else if (unit == "average") {
-    ve_abs <- (vr + vsr) / khat
-    ve_rel <- ((q * vr) + vsr) / khat
-  }
+  icc_post <- list(
+    var_s = vs,
+    var_r = vr,
+    var_e = vsr,
+    icc_a_1 = vs / (vs + vr + vsr),
+    icc_a_k = vs / (vs + (vr + vsr) / k),
+    icc_a_khat = vs / (vs + (vr + vsr) / khat),
+    icc_c_1 = vs / (vs + vsr),
+    icc_c_k = vs / (vs + vsr / k),
+    icc_q_khat = vs / (vs + q * vr + vsr / khat)
+  )
 
-  icc_abs <- vs / (vs + ve_abs)
-  icc_rel <- vs / (vs + ve_rel)
+  # Calculate point estimates
+  icc_est <- vapply(
+    X = icc_post,
+    FUN = post_mode,
+    FUN.VALUE = double(1)
+  )
 
-  out <- c(ICC_abs = icc_abs, ICC_rel = icc_rel)
+  # Calculate equal tail intervals
+  icc_eti <- vapply(
+    X = icc_post,
+    FUN = stats::quantile,
+    FUN.VALUE = double(2),
+    probs = c(
+      (1 - ci) / 2,
+      ci + (1 - ci) / 2
+    )
+  )
 
-  out
+  # Construct output tibble
+  summary_df <-
+    tibble(
+      term = c(
+        "Subject Variance", "Rater Variance", "Residual Variance",
+        "ICC(A,1)", "ICC(A,k)", "ICC(A,khat)",
+        "ICC(C,1)", "ICC(C,k)", "ICC(Q,khat)"
+      ),
+      icc = icc_est,
+      lower = icc_eti[1, ],
+      upper = icc_eti[2, ],
+      method = method,
+      k = k,
+      khat = khat
+    )
 
-}
-
-#' @method calc_icc varde_res
-#' @export
-calc_icc.varde_res <- function(res,
-                               subject = "subject",
-                               rater = "rater",
-                               ...) {
-
-  vs <- res[[which(res$component == subject), "variance"]]
-  vr <- res[[which(res$component == rater), "variance"]]
-  vsr <- res[[which(res$component == "Residual"), "variance"]]
-
-  # TODO: Need to calculate khat and q from data and save into varde_res
+  varde_icc(summary = summary_df, posterior = do.call(cbind, icc_post))
 
 }

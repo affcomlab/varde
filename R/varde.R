@@ -1,11 +1,8 @@
-#' @export
-varde <- function(model, ci = 0.95) {
-  UseMethod("varde")
-}
+# S3 Methods
 
-#' @method varde lmerMod
+#' @method varde merMod
 #' @export
-varde.lmerMod <- function(model, ci = 0.95) {
+varde.merMod <- function(model, ci = 0.95) {
   assertthat::assert_that(check_convergence(model) == TRUE)
   assertthat::assert_that(is.null(ci) || rlang::is_double(ci, n = 1))
 
@@ -41,9 +38,11 @@ varde.lmerMod <- function(model, ci = 0.95) {
 
 #' @method varde brmsfit
 #' @export
-varde.brmsfit <- function(model, ci = 0.95) {
+varde.brmsfit <- function(model, point_estimate = "mode", ci = 0.95) {
+
   assertthat::assert_that(check_convergence(model) == TRUE)
   assertthat::assert_that(rlang::is_double(ci, n = 1))
+  point_estimate = match.arg(point_estimate, c("mode", "median", "mean"))
 
   # Extract posterior draws for SD parameters
   sds <- brms::as_draws_matrix(
@@ -60,35 +59,32 @@ varde.brmsfit <- function(model, ci = 0.95) {
   colnames(vars) <- gsub("__Intercept", "", colnames(vars))
   colnames(vars) <- gsub("sigma", "Residual", colnames(vars))
 
-  # Calculate point estimates as maximum a posteriori (i.e., mode)
-  vars_map <- apply(X = vars, MARGIN = 2, FUN = post_mode)
+  # Calculate point estimates
+  if (point_estimate == "mode") {
+    vars_est <- apply(X = vars, MARGIN = 2, FUN = post_mode)
+  } else if (point_estimate == "median") {
+    vars_est <- apply(X = vars, MARGIN = 2, FUN = median)
+  } else if (point_estimate == "mean") {
+    vars_est <- apply(X = vars, MARGIN = 2, FUN = mean)
+  }
 
-  # Caluclate interval estimate as posterior percentile
+  # Calculate interval estimate as posterior percentile
   vars_clo <- apply(X = vars, MARGIN = 2, FUN = stats::quantile,
                     probs = (1 - ci) / 2)
   vars_chi <- apply(X = vars, MARGIN = 2, FUN = stats::quantile,
                     probs = ci + (1 - ci) / 2)
 
   # Construct output tibble
-  out <-
+  summary_df <-
     tibble(
       component = colnames(vars),
-      variance = vars_map,
+      variance = vars_est,
       lower = vars_clo,
       upper = vars_chi,
-      percent = vars_map / sum(vars_map),
+      percent = vars_est / sum(vars_est),
       method = "brms"
     )
 
-  varde_res(out)
+  varde_res(summary = summary_df, posterior = vars)
 }
 
-#' @exportClass verde_res
-new_varde_res <- function(x = tibble()) {
-  stopifnot(tibble::is_tibble(x))
-  structure(x, class = c("varde_res", class(x)))
-}
-
-varde_res <- function(x = tibble()) {
-  new_varde_res(x)
-}

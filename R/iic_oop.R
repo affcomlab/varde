@@ -8,6 +8,20 @@ new_srm <- function(x, ...) {
   structure(x, ..., class = "varde_srm")
 }
 
+new_icc <- function(summary = tibble::tibble(), posterior = matrix()) {
+  stopifnot(tibble::is_tibble(summary))
+  stopifnot(is.matrix(posterior))
+  structure(
+    list(summary = summary, posterior = posterior),
+    class = "varde_icc"
+  )
+}
+
+# S3 Helper
+varde_icc <- function(summary = tibble(), posterior = matrix()) {
+  new_icc(summary, posterior)
+}
+
 # S3 Generics -------------------------------------------------------------
 
 #' @export
@@ -181,4 +195,10 @@ calc_q.data.frame <- function(.data,
   # Return q
   q
 
+}
+
+#' @export print.varde_icc
+#' @export
+print.varde_icc <- function(x, ...) {
+  print(x$summary, ...)
 }

@@ -106,13 +106,25 @@
     },
     "StanHeaders": {
       "Package": "StanHeaders",
-      "Version": "2.21.0-7",
+      "Version": "2.26.13",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "0459d4dd7a8c239be18469a30c23dd4b",
+      "Hash": "f54ef22dec1b0710070e2d9bd3fc0174",
       "Requirements": [
         "RcppEigen",
         "RcppParallel"
+      ]
+    },
+    "V8": {
+      "Package": "V8",
+      "Version": "4.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ebee37dadb0a8f5086663825d2c33076",
+      "Requirements": [
+        "Rcpp",
+        "curl",
+        "jsonlite"
       ]
     },
     "abind": {
@@ -1379,16 +1391,17 @@
     },
     "rstan": {
       "Package": "rstan",
-      "Version": "2.21.7",
+      "Version": "2.26.13",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "62745645aadeb276b67ddb9f0993cfeb",
+      "Hash": "a23e5a0f93ed81cf2f0fd8f380fce9ec",
       "Requirements": [
         "BH",
         "Rcpp",
         "RcppEigen",
         "RcppParallel",
         "StanHeaders",
+        "V8",
         "ggplot2",
         "gridExtra",
         "inline",
