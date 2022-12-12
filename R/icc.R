@@ -191,6 +191,10 @@ calc_icc.data.frame <- function(.data,
       error = rep(c(NA_character_, "Absolute", "Relative"), each = 3)
     )
 
-  varde_icc(summary = summary_df, posterior = do.call(cbind, icc_post))
+  varde_icc(
+    summary = summary_df,
+    posterior = do.call(cbind, icc_post),
+    model = fit
+  )
 
 }

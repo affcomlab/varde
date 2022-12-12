@@ -8,18 +8,23 @@ new_srm <- function(x, ...) {
   structure(x, ..., class = "varde_srm")
 }
 
-new_icc <- function(summary = tibble::tibble(), posterior = matrix()) {
+new_icc <- function(summary = tibble::tibble(),
+                    model = list(),
+                    posterior = matrix()) {
   stopifnot(tibble::is_tibble(summary))
+  stopifnot(inherits(model, "brmsfit"))
   stopifnot(is.matrix(posterior))
   structure(
-    list(summary = summary, posterior = posterior),
+    list(summary = summary, model = model, posterior = posterior),
     class = "varde_icc"
   )
 }
 
 # S3 Helper
-varde_icc <- function(summary = tibble(), posterior = matrix()) {
-  new_icc(summary, posterior)
+varde_icc <- function(summary = tibble(),
+                      model = list(),
+                      posterior = matrix()) {
+  new_icc(summary, model, posterior)
 }
 
 # S3 Generics -------------------------------------------------------------
