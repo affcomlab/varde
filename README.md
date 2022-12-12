@@ -45,7 +45,9 @@ fit_1 <- brms::brm(
   iter = 10000,
   seed = 2022
 )
+```
 
+``` r
 # Extract variance component estimates
 res_1 <- varde(fit_1)
 res_1
@@ -55,24 +57,26 @@ res_1
 #> 1 Rater        1.05  0.811  1.63   0.330 brms  
 #> 2 Target       0.681 0.471  1.26   0.214 brms  
 #> 3 Residual     1.45  1.38   1.54   0.457 brms
+```
 
+``` r
 # Create density plot of variance posteriors
 plot(res_1, type = "posterior")
 ```
 
-<img src="man/figures/README-res_1-1.png" width="100%" />
+![](man/figures/README-p1a-1.png)<!-- -->
 
 ``` r
-
 # Create river plot of variance percentages
-plot(res_1, type = "river", font_size = 4)
+plot(res_1, type = "river")
 ```
 
-<img src="man/figures/README-res_1-2.png" width="100%" />
+![](man/figures/README-p1b-1.png)<!-- -->
 
 ### Simple Two-Way ICC for Inter-Rater Reliability
 
 ``` r
+# Calculate variance components and ICCs
 res_3 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
@@ -81,15 +85,22 @@ res_3 <- calc_icc(
 )
 res_3
 #> # A tibble: 9 × 6
-#>   term                icc lower upper raters error   
+#>   term                est lower upper raters error   
 #>   <chr>             <dbl> <dbl> <dbl>  <dbl> <chr>   
-#> 1 Subject Variance  0.710 0.482 1.28      NA <NA>    
-#> 2 Rater Variance    1.07  0.811 1.62      NA <NA>    
-#> 3 Residual Variance 1.45  1.38  1.54      NA <NA>    
-#> 4 ICC(A,1)          0.219 0.154 0.336      1 Absolute
-#> 5 ICC(A,k)          0.956 0.929 0.973     72 Absolute
-#> 6 ICC(A,khat)       0.956 0.929 0.973     72 Absolute
-#> 7 ICC(C,1)          0.330 0.248 0.470      1 Relative
-#> 8 ICC(C,k)          0.975 0.960 0.985     72 Relative
-#> 9 ICC(Q,khat)       0.975 0.960 0.985     72 Relative
+#> 1 Subject Variance  0.672 0.471 1.27      NA <NA>    
+#> 2 Rater Variance    1.06  0.800 1.59      NA <NA>    
+#> 3 Residual Variance 1.46  1.38  1.54      NA <NA>    
+#> 4 ICC(A,1)          0.210 0.150 0.335      1 Absolute
+#> 5 ICC(A,k)          0.957 0.927 0.973     72 Absolute
+#> 6 ICC(A,khat)       0.957 0.927 0.973     72 Absolute
+#> 7 ICC(C,1)          0.320 0.244 0.468      1 Relative
+#> 8 ICC(C,k)          0.975 0.959 0.984     72 Relative
+#> 9 ICC(Q,khat)       0.975 0.959 0.984     72 Relative
 ```
+
+``` r
+# Create density plot of all posteriors
+plot(res_3, components = "all")
+```
+
+![](man/figures/README-p2-1.png)<!-- -->

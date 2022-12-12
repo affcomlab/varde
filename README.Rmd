@@ -8,8 +8,7 @@ output: github_document
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
+  fig.path = "man/figures/README-"
 )
 ```
 
@@ -52,21 +51,28 @@ fit_1 <- brms::brm(
   iter = 10000,
   seed = 2022
 )
+```
 
+```{r}
 # Extract variance component estimates
 res_1 <- varde(fit_1)
 res_1
+```
 
+```{r p1a, fig.width=5, fig.height=3}
 # Create density plot of variance posteriors
 plot(res_1, type = "posterior")
+```
 
+```{r p1b, fig.width=5, fig.height=4}
 # Create river plot of variance percentages
-plot(res_1, type = "river", font_size = 4)
+plot(res_1, type = "river")
 ```
 
 ### Simple Two-Way ICC for Inter-Rater Reliability
 
 ```{r res_3, message=FALSE, cache=TRUE}
+# Calculate variance components and ICCs
 res_3 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
@@ -74,4 +80,9 @@ res_3 <- calc_icc(
   score = "Score"
 )
 res_3
+```
+
+```{r p2, fig.width=7, fig.height=5}
+# Create density plot of all posteriors
+plot(res_3, components = "all")
 ```
