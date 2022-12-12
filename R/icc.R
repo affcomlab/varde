@@ -184,7 +184,7 @@ calc_icc.data.frame <- function(.data,
         "ICC(A,1)", "ICC(A,k)", "ICC(A,khat)",
         "ICC(C,1)", "ICC(C,k)", "ICC(Q,khat)"
       ),
-      icc = icc_est,
+      est = icc_est,
       lower = icc_eti[1, ],
       upper = icc_eti[2, ],
       raters = c(NA_integer_, NA_integer_, NA_integer_, 1, k, khat, 1, k, khat),
