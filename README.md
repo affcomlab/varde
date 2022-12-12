@@ -26,76 +26,70 @@ In the `ppa` example dataset, 72 human “raters” judged the perceived
 physical attractiveness of 36 human “targets” in 6 different conditions
 (i.e., stimulus “types”).
 
-### Frequentist estimation using {lme4}
+### Simple Generalizability Study
 
 ``` r
 library(varde)
-fit_1a <- lme4::lmer(
+
+# Extract only type 1 observations (to simplify the example)
+ppa_type1 <- ppa[ppa$Type == 1, ]
+
+# Fit a mixed effects model with target and rater effects
+fit_1 <- brms::brm(
   formula = Score ~ 1 + (1 | Target) + (1 | Rater),
-  data = ppa
-)
-res_1a <- varde(fit_1a, ci = 0.95)
-res_1a
-#> # A tibble: 3 × 6
-#>   component variance lower upper percent method
-#> * <chr>        <dbl> <dbl> <dbl>   <dbl> <chr> 
-#> 1 Rater        1.04  0.755  1.46   0.304 lmer  
-#> 2 Target       0.834 0.532  1.36   0.244 lmer  
-#> 3 Residual     1.55  1.51   1.58   0.453 lmer
-plot(res_1a)
-```
-
-<img src="man/figures/README-res_1a-1.png" width="100%" />
-
-### Bayesian estimation using {brms}
-
-``` r
-fit_1b <- brms::brm(
-  formula = Score ~ 1 + (1 | Target) + (1 | Rater),
-  data = ppa,
+  data = ppa_type1,
   chains = 4,
   cores = 4,
   init = "random",
   warmup = 5000,
   iter = 10000,
-  refresh = 0,
-  silent = 2,
   seed = 2022
 )
-res_1b <- varde(fit_1b, ci = 0.95)
-res_1b
+
+# Extract variance component estimates
+res_1 <- varde(fit_1)
+res_1
 #> # A tibble: 3 × 6
 #>   component variance lower upper percent method
-#> * <chr>        <dbl> <dbl> <dbl>   <dbl> <chr> 
-#> 1 Rater        1.03  0.768  1.51   0.298 brms  
-#> 2 Target       0.869 0.561  1.46   0.252 brms  
-#> 3 Residual     1.55  1.51   1.58   0.450 brms
-plot(res_1b)
+#>   <chr>        <dbl> <dbl> <dbl>   <dbl> <chr> 
+#> 1 Rater        1.05  0.811  1.63   0.330 brms  
+#> 2 Target       0.681 0.471  1.26   0.214 brms  
+#> 3 Residual     1.45  1.38   1.54   0.457 brms
+
+# Create density plot of variance posteriors
+plot(res_1, type = "posterior")
 ```
 
-<img src="man/figures/README-res_1b-1.png" width="100%" />
-
-### More complicated example using {lme4}
+<img src="man/figures/README-res_1-1.png" width="100%" />
 
 ``` r
-fit_2 <- lme4::lmer(
-  formula = Score ~ 1 + (1 | Target) + (1 | Rater) + (1 | Type) +
-    (1 | Target:Rater) + (1 | Target:Type) + (1 | Rater:Type),
-  data = ppa
-)
-res_2 <- varde(fit_2, ci = NULL)
-res_2
-#> # A tibble: 7 × 6
-#>   component    variance lower upper percent method
-#> * <chr>           <dbl> <dbl> <dbl>   <dbl> <chr> 
-#> 1 Target:Rater   0.913     NA    NA 0.267   lmer  
-#> 2 Rater:Type     0.0443    NA    NA 0.0129  lmer  
-#> 3 Target:Type    0.0523    NA    NA 0.0153  lmer  
-#> 4 Rater          1.01      NA    NA 0.295   lmer  
-#> 5 Target         0.815     NA    NA 0.238   lmer  
-#> 6 Type           0.0264    NA    NA 0.00772 lmer  
-#> 7 Residual       0.564     NA    NA 0.165   lmer
-plot(res_2)
+
+# Create river plot of variance percentages
+plot(res_1, type = "river", font_size = 4)
 ```
 
-<img src="man/figures/README-res_2-1.png" width="100%" />
+<img src="man/figures/README-res_1-2.png" width="100%" />
+
+### Simple Two-Way ICC for Inter-Rater Reliability
+
+``` r
+res_3 <- calc_icc(
+  .data = ppa_type1, 
+  subject = "Target",
+  rater = "Rater",
+  score = "Score"
+)
+res_3
+#> # A tibble: 9 × 6
+#>   term                icc lower upper raters error   
+#>   <chr>             <dbl> <dbl> <dbl>  <dbl> <chr>   
+#> 1 Subject Variance  0.710 0.482 1.28      NA <NA>    
+#> 2 Rater Variance    1.07  0.811 1.62      NA <NA>    
+#> 3 Residual Variance 1.45  1.38  1.54      NA <NA>    
+#> 4 ICC(A,1)          0.219 0.154 0.336      1 Absolute
+#> 5 ICC(A,k)          0.956 0.929 0.973     72 Absolute
+#> 6 ICC(A,khat)       0.956 0.929 0.973     72 Absolute
+#> 7 ICC(C,1)          0.330 0.248 0.470      1 Relative
+#> 8 ICC(C,k)          0.975 0.960 0.985     72 Relative
+#> 9 ICC(Q,khat)       0.975 0.960 0.985     72 Relative
+```

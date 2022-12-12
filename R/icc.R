@@ -62,14 +62,26 @@ calc_icc.data.frame <- function(.data,
 
   assertthat::assert_that(rlang::is_null(k) || rlang::is_integerish(k, n = 1))
 
+  # Create logical subject-rater matrix
+  srm <- create_srm(.data, subject, rater, score)
+
+  # Count the number of raters who scored each subject
+  ks <- rowSums(srm)
+
+  # Count the number of subjects scored by each rater
+  nk <- colSums(srm)
+
   # Remove all subjects that had no raters
-  ks <- calc_ks(.data, subject = subject, rater = rater, score = score)
   .data <- .data[.data[[subject]] %in% names(ks[ks > 0]), ]
-  # TODO: Check if we should remove ks == 1 as well as ks == 0
+  # TODO: Check whether we should remove ks == 1 as well as ks == 0
 
   # Remove all raters that had no subjects
-  ss <- calc_ss(.data, subject = subject, rater = rater, score = score)
-  .data <- .data[.data[[rater]] %in% names(ss[ss > 0]), ]
+  .data <- .data[.data[[rater]] %in% names(nk[nk > 0]), ]
+
+  # Update subject-rater matrix
+  srm <- create_srm(.data, subject, rater, score)
+
+  # If not specified, set k as the number of unique raters
   if (is.null(k)) {
     k <- length(unique(.data[[rater]]))
   }
@@ -96,29 +108,30 @@ calc_icc.data.frame <- function(.data,
 
   # Extract posterior draws from model
   if (twoway) {
-    variables <- c(
+    brms_names <- c(
       paste0("sd_", subject, "__Intercept"),
       paste0("sd_", rater, "__Intercept"),
       "sigma"
     )
-    variables_names <- c("Subject", "Rater", "Residual")
+    icc_names <- c("Subject", "Rater", "Residual")
   } else {
-    variables <- c(
+    brms_names <- c(
       paste0("sd_", subject, "__Intercept"),
       "sigma"
     )
-    variables_names <- c("Subject", "Residual")
+    icc_names <- c("Subject", "Residual")
   }
   sds <- brms::as_draws_matrix(
     x = fit,
-    variable = variables,
+    variable = brms_names,
     inc_warmup = FALSE
   )
-  colnames(sds) <- variables_names
+  colnames(sds) <- icc_names
 
   # Convert estimates to variances
   vars <- sds^2
 
+  # Extract posterior draws as vectors
   vs <-  as.vector(vars[, "Subject"])
   if (twoway) {
     vr <- as.vector(vars[, "Rater"])
@@ -126,8 +139,6 @@ calc_icc.data.frame <- function(.data,
     vr <- rep(NA_real_, length(vs))
   }
   vsr <- as.vector(vars[, "Residual"])
-
-  srm <- create_srm(.data, subject = subject, rater = rater, score = score)
 
   # Calculate the harmonic mean of the number of raters per subject
   khat <- calc_khat(srm)
@@ -176,9 +187,8 @@ calc_icc.data.frame <- function(.data,
       icc = icc_est,
       lower = icc_eti[1, ],
       upper = icc_eti[2, ],
-      method = method,
-      k = k,
-      khat = khat
+      raters = c(NA_integer_, NA_integer_, NA_integer_, 1, k, khat, 1, k, khat),
+      error = rep(c(NA_character_, "Absolute", "Relative"), each = 3)
     )
 
   varde_icc(summary = summary_df, posterior = do.call(cbind, icc_post))
