@@ -25,6 +25,7 @@ plot.varde_icc <- function(x,
       names_to = "Term",
       values_to = "Estimate"
     ) |>
+    dplyr::mutate(Term = factor(Term, levels = x$summary$term)) |>
     ggplot2::ggplot(ggplot2::aes(x = Estimate)) +
     ggplot2::facet_wrap(~Term, scales = "free") +
     ggplot2::geom_density(fill = "lightblue", alpha = 1/2) +

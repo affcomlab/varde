@@ -12,6 +12,7 @@ BugReports: https://github.com/jmgirard/varde/issues
 Imports: 
     assertthat,
     brms,
+    dplyr,
     forcats,
     ggforce (>= 0.4.0),
     ggplot2,
