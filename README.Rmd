@@ -32,14 +32,17 @@ devtools::install_github("jmgirard/varde")
 
 In the `ppa` example dataset, 72 human "raters" judged the perceived physical attractiveness of 36 human "targets" in 6 different conditions (i.e., stimulus "types").
 
-### Simple Generalizability Study
-
-```{r res_1, message=FALSE, cache=TRUE}
+```{r}
 library(varde)
 
 # Extract only type 1 observations (to simplify the example)
 ppa_type1 <- ppa[ppa$Type == 1, ]
+```
 
+
+### Simple Generalizability Study
+
+```{r res_1, message=FALSE, cache=TRUE}
 # Fit a mixed effects model with target and rater effects
 fit_1 <- brms::brm(
   formula = Score ~ 1 + (1 | Target) + (1 | Rater),
@@ -71,18 +74,18 @@ plot(res_1, type = "river")
 
 ### Simple Two-Way ICC for Inter-Rater Reliability
 
-```{r res_3, message=FALSE, cache=TRUE}
+```{r res_2, message=FALSE, cache=TRUE}
 # Calculate variance components and ICCs
-res_3 <- calc_icc(
+res_2 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
   rater = "Rater",
   score = "Score"
 )
-res_3
+res_2
 ```
 
 ```{r p2, fig.width=7, fig.height=5}
 # Create density plot of all posteriors
-plot(res_3, components = "all")
+plot(res_2, components = "all")
 ```

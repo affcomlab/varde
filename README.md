@@ -26,14 +26,16 @@ In the `ppa` example dataset, 72 human “raters” judged the perceived
 physical attractiveness of 36 human “targets” in 6 different conditions
 (i.e., stimulus “types”).
 
-### Simple Generalizability Study
-
 ``` r
 library(varde)
 
 # Extract only type 1 observations (to simplify the example)
 ppa_type1 <- ppa[ppa$Type == 1, ]
+```
 
+### Simple Generalizability Study
+
+``` r
 # Fit a mixed effects model with target and rater effects
 fit_1 <- brms::brm(
   formula = Score ~ 1 + (1 | Target) + (1 | Rater),
@@ -77,30 +79,30 @@ plot(res_1, type = "river")
 
 ``` r
 # Calculate variance components and ICCs
-res_3 <- calc_icc(
+res_2 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
   rater = "Rater",
   score = "Score"
 )
-res_3
+res_2
 #> # A tibble: 9 × 6
 #>   term                est lower upper raters error   
 #>   <chr>             <dbl> <dbl> <dbl>  <dbl> <chr>   
-#> 1 Subject Variance  0.672 0.471 1.27      NA <NA>    
-#> 2 Rater Variance    1.06  0.800 1.59      NA <NA>    
+#> 1 Subject Variance  0.658 0.464 1.26      NA <NA>    
+#> 2 Rater Variance    1.06  0.803 1.59      NA <NA>    
 #> 3 Residual Variance 1.46  1.38  1.54      NA <NA>    
-#> 4 ICC(A,1)          0.210 0.150 0.335      1 Absolute
-#> 5 ICC(A,k)          0.957 0.927 0.973     72 Absolute
-#> 6 ICC(A,khat)       0.957 0.927 0.973     72 Absolute
-#> 7 ICC(C,1)          0.320 0.244 0.468      1 Relative
-#> 8 ICC(C,k)          0.975 0.959 0.984     72 Relative
-#> 9 ICC(Q,khat)       0.975 0.959 0.984     72 Relative
+#> 4 ICC(A,1)          0.217 0.150 0.333      1 Absolute
+#> 5 ICC(A,k)          0.955 0.927 0.973     72 Absolute
+#> 6 ICC(A,khat)       0.955 0.927 0.973     72 Absolute
+#> 7 ICC(C,1)          0.333 0.241 0.465      1 Relative
+#> 8 ICC(C,k)          0.974 0.958 0.984     72 Relative
+#> 9 ICC(Q,khat)       0.974 0.958 0.984     72 Relative
 ```
 
 ``` r
 # Create density plot of all posteriors
-plot(res_3, components = "all")
+plot(res_2, components = "all")
 ```
 
 ![](man/figures/README-p2-1.png)<!-- -->
