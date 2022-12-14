@@ -105,4 +105,11 @@ res_2
 plot(res_2, components = "all")
 ```
 
-![](man/figures/README-p2-1.png)<!-- -->
+![](man/figures/README-p2a-1.png)<!-- -->
+
+``` r
+# Create density plot of ICC posteriors
+plot(res_2, components = "icc")
+```
+
+![](man/figures/README-p2b-1.png)<!-- -->

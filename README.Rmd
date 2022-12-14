@@ -62,7 +62,7 @@ res_1 <- varde(fit_1)
 res_1
 ```
 
-```{r p1a, fig.width=5, fig.height=3}
+```{r p1a, fig.width=7, fig.height=2.5}
 # Create density plot of variance posteriors
 plot(res_1, type = "posterior")
 ```
@@ -85,7 +85,12 @@ res_2 <- calc_icc(
 res_2
 ```
 
-```{r p2, fig.width=7, fig.height=5}
+```{r p2a, fig.width=7, fig.height=5}
 # Create density plot of all posteriors
 plot(res_2, components = "all")
+```
+
+```{r p2b, fig.width=7, fig.height=5}
+# Create density plot of ICC posteriors
+plot(res_2, components = "icc")
 ```
