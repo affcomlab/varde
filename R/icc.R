@@ -42,11 +42,69 @@ create_srm <- function(.data,
 
 # calc_icc() --------------------------------------------------------------
 
+#' @inherit calc_icc.data.frame
+#' @inheritParams calc_icc.data.frame
 #' @export
-calc_icc <- function(x, ...) {
+calc_icc <- function(.data,
+                     subject = "subject",
+                     rater = "rater",
+                     score = "score",
+                     k = NULL,
+                     ci = 0.95,
+                     chains = 4,
+                     cores = 4,
+                     iter = 5000,
+                     subject_label = "Subject",
+                     rater_label = "Rater",
+                     residual_label = "Residual",
+                     ...) {
   UseMethod("calc_icc")
 }
 
+#' Calculate Inter-Rater ICC
+#'
+#' Calculate variance component and inter-rater intraclass correlation estimates
+#' using a Bayesian generalizability study.
+#'
+#' @param .data A data frame containing at least the variables identified in
+#'   `subject`, `rater`, and `score`.
+#' @param subject A string indicating the column name in `.data` that contains
+#'   an identifier for the subject or thing being scored in each row (e.g.,
+#'   person, image, or document). (default = `"subject"`)
+#' @param rater A string indicating the column name in `.data` that contains an
+#'   identifier for the rater or thing providing the score in each row (e.g.,
+#'   rater, judge, or instrument). (default = `"rater"`)
+#' @param score A string indicating the column name in `.data` that contains the
+#'   numerical score representing the rating of each row's subject from that
+#'   same row's rater (e.g., score, rating, judgment, measurement). (default =
+#'   `"score"`)
+#' @param k Either `NULL` to set the number of raters you would like to estimate
+#'   the reliability of to the total number of unique raters observed in `.data`
+#'   or an integer specifying the number of raters you would like to estimate
+#'   the reliability of (see details below). (default = `NULL`)
+#' @param ci A finite number between 0 and 1 that represents the width of the
+#'   credible intervals to estimate (e.g., 0.95 = 95% CI). (default = `0.95`)
+#' @param chains An integer representing the number of Markov chains to use in
+#'   estimation. Forwarded on to [brms::brm()]. (default = `4`)
+#' @param cores An integer representing the number of cores to use when
+#'   executing the chains in parallel. Forwarded on to [brms::brm()]. (default =
+#'   `4`)
+#' @param iter An integer representing the total number of interations per chain
+#'   (including warmup). Forwarded on to [brms::brm()]. (default = `5000`)
+#' @param subject_label A string that controls what subjects are called in the
+#'   returned output objects and any subsequent plots. (default = `"Subject"`)
+#' @param rater_label A string that controls what raters are called in the
+#'   returned output objects and any subsequent plots. (default = `"Rater"`)
+#' @param residual_label A string that controls what residuals are called in the
+#'   returned output objects and any subsequent plots. (default = `"Residual"`)
+#' @param ... Further arguments passed to [brms::brm()].
+#' @return A list object of class "varde_icc" that includes three main elements:
+#' * `$summary`: A [tibble::tibble()] containing summary information about each
+#'   variance component and ICC estimate.
+#' * `$posterior`: A matrix where each row is a single posterior sample and each
+#'   column is either a variance component or ICC estimate.
+#' * `$model`: The brmsfit object created by [brms::brm()] containing the full
+#'   results of the Bayesian generalizability study.
 #' @method calc_icc data.frame
 #' @export
 calc_icc.data.frame <- function(.data,
@@ -58,9 +116,16 @@ calc_icc.data.frame <- function(.data,
                      chains = 4,
                      cores = 4,
                      iter = 5000,
+                     subject_label = "Subject",
+                     rater_label = "Rater",
+                     residual_label = "Residual",
                      ...) {
 
   assertthat::assert_that(rlang::is_null(k) || rlang::is_integerish(k, n = 1))
+  assertthat::assert_that(rlang::is_double(ci, n = 1, finite = TRUE),
+                          ci > 0, ci < 1)
+  assertthat::assert_that(rlang::is_integerish(chains, n = 1, finite = TRUE),
+                          chains >= 1)
 
   # Create logical subject-rater matrix
   srm <- create_srm(.data, subject, rater, score)
@@ -113,13 +178,13 @@ calc_icc.data.frame <- function(.data,
       paste0("sd_", rater, "__Intercept"),
       "sigma"
     )
-    icc_names <- c("Subject", "Rater", "Residual")
+    icc_names <- c(subject_label, rater_label, residual_label)
   } else {
     brms_names <- c(
       paste0("sd_", subject, "__Intercept"),
       "sigma"
     )
-    icc_names <- c("Subject", "Residual")
+    icc_names <- c(subject_label, residual_label)
   }
   sds <- brms::as_draws_matrix(
     x = fit,
@@ -132,13 +197,13 @@ calc_icc.data.frame <- function(.data,
   vars <- sds^2
 
   # Extract posterior draws as vectors
-  vs <-  as.vector(vars[, "Subject"])
+  vs <-  as.vector(vars[, subject_label])
   if (twoway) {
-    vr <- as.vector(vars[, "Rater"])
+    vr <- as.vector(vars[, rater_label])
   } else {
     vr <- rep(NA_real_, length(vs))
   }
-  vsr <- as.vector(vars[, "Residual"])
+  vsr <- as.vector(vars[, residual_label])
 
   # Calculate the harmonic mean of the number of raters per subject
   khat <- calc_khat(srm)
@@ -180,7 +245,9 @@ calc_icc.data.frame <- function(.data,
   summary_df <-
     tibble(
       term = c(
-        "Subject Variance", "Rater Variance", "Residual Variance",
+        paste0(subject_label, " Variance"),
+        paste0(rater_label, " Variance"),
+        paste0(residual_label, " Variance"),
         "ICC(A,1)", "ICC(A,k)", "ICC(A,khat)",
         "ICC(C,1)", "ICC(C,k)", "ICC(Q,khat)"
       ),
