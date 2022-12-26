@@ -62,14 +62,19 @@ res_1 <- varde(fit_1)
 res_1
 ```
 
-```{r p1a, fig.width=7, fig.height=2.5}
-# Create density plot of variance posteriors
-plot(res_1, type = "posterior")
-```
-
-```{r p1b, fig.width=5, fig.height=4}
+```{r p1a, fig.width=5, fig.height=4}
 # Create river plot of variance percentages
 plot(res_1, type = "river")
+```
+
+```{r p1b, fig.width=7, fig.height=2.5}
+# Create density plot of variance posteriors
+plot(res_1, type = "variances")
+```
+
+```{r p1c, fig.width=5, fig.height=2.5}
+# Create jitter plot of random intercepts
+plot(res_1, type = "intercepts")
 ```
 
 ### Simple Two-Way ICC for Inter-Rater Reliability

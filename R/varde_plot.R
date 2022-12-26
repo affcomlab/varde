@@ -5,17 +5,18 @@ plot.varde_res <- function(x,
                            type = "river",
                            font_size = 10,
                            xlim = c(4.75, 6.5),
+                           interactive = FALSE,
                            ...) {
 
-  match.arg(type, choices = c("river", "posterior"))
+  match.arg(type, choices = c("river", "variances", "intercepts"))
 
   if (type == "river") {
-    summary_df <- x$summary
+    summary_df <- x$vars_summary
     df <-
       tibble::tibble(
         id = 1:nrow(summary_df),
         component = summary_df$component,
-        variance = summary_df$variance,
+        variance = summary_df$estimate,
         percent = summary_df$percent,
         total = rep("Total\nVariance", nrow(summary_df)),
         label =
@@ -52,8 +53,8 @@ plot.varde_res <- function(x,
       ggplot2::coord_cartesian(xlim = xlim) +
       ggplot2::scale_fill_discrete() +
       ggplot2::theme_void()
-  } else if (type == "posterior") {
-    posterior_df <- x$posterior
+  } else if (type == "variances") {
+    posterior_df <- x$vars_posterior
     out <-
       tibble::as_tibble(posterior_df) |>
       tidyr::pivot_longer(
@@ -67,6 +68,38 @@ plot.varde_res <- function(x,
       ggplot2::scale_x_continuous() +
       ggplot2::labs(y = "Posterior Density") +
       ggplot2::theme_grey(base_size = font_size)
+  } else if (type == "intercepts") {
+    summary_df <- x$ints_summary
+    out <-
+      summary_df |>
+      ggplot2::ggplot(ggplot2::aes(x = estimate, y = 1)) +
+      ggplot2::facet_wrap(~component, scales = "free") +
+      ggbeeswarm::geom_quasirandom() +
+      ggplot2::scale_x_continuous() +
+      ggplot2::scale_y_discrete() +
+      ggplot2::labs(x = "Estimated Intercept", y = NULL) +
+      ggplot2::theme_grey(base_size = font_size)
+    if (interactive) {
+      require("plotly")
+      out <-
+        summary_df |>
+        ggplot2::ggplot(
+          ggplot2::aes(
+            x = estimate,
+            y = 1,
+            #text = paste0(component, ": ", id, "\nEstimate: ", round(estimate, 3))
+          )
+        ) +
+        ggplot2::facet_wrap(~component, scales = "free") +
+        ggplot2::geom_jitter(width = 0) +
+        ggplot2::scale_x_continuous() +
+        ggplot2::scale_y_discrete() +
+        ggplot2::labs(x = "Estimated Intercept", y = NULL) +
+        ggplot2::theme_grey(base_size = font_size)
+      out <-
+        plotly::ggplotly(out, tooltip = "text") |>
+        plotly::config(displayModeBar = FALSE)
+    }
   }
 
   out

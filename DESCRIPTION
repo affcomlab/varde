@@ -12,8 +12,10 @@ BugReports: https://github.com/jmgirard/varde/issues
 Imports: 
     assertthat,
     brms,
+    crayon,
     dplyr,
     forcats,
+    ggbeeswarm,
     ggforce (>= 0.4.0),
     ggplot2,
     lme4,
@@ -22,6 +24,7 @@ Imports:
     tidyr
 Suggests: 
     Matrix,
+    plotly,
     rstan,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
