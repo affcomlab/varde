@@ -109,6 +109,7 @@ res_2 <- calc_icc(
   subject = "Target",
   rater = "Rater",
   score = "Score",
+  k = 12,
   file = "m2"
 )
 res_2
@@ -116,35 +117,35 @@ res_2
 #> # A tibble: 6 × 6
 #>   term          est lower upper raters error   
 #>   <chr>       <dbl> <dbl> <dbl>  <dbl> <chr>   
-#> 1 ICC(A,1)    0.329 0.252 0.423      1 Absolute
-#> 2 ICC(A,k)    0.973 0.960 0.981     72 Absolute
-#> 3 ICC(A,khat) 0.973 0.960 0.981     72 Absolute
-#> 4 ICC(C,1)    0.435 0.350 0.521      1 Relative
-#> 5 ICC(C,k)    0.983 0.975 0.987     72 Relative
-#> 6 ICC(Q,khat) 0.983 0.975 0.987     72 Relative
+#> 1 ICC(A,1)    0.337 0.255 0.430      1 Absolute
+#> 2 ICC(A,k)    0.862 0.804 0.900     12 Absolute
+#> 3 ICC(A,khat) 0.974 0.961 0.982     72 Absolute
+#> 4 ICC(C,1)    0.440 0.357 0.527      1 Relative
+#> 5 ICC(C,k)    0.906 0.869 0.930     12 Relative
+#> 6 ICC(Q,khat) 0.983 0.976 0.988     72 Relative
 #> 
 #> # Variance Estimates
 #> # A tibble: 3 × 6
 #>   component term     estimate lower upper percent
 #>   <chr>     <chr>       <dbl> <dbl> <dbl>   <dbl>
-#> 1 Subject   Variance    1.04  0.786  1.57   0.326
-#> 2 Rater     Variance    0.694 0.469  1.26   0.217
-#> 3 Residual  Variance    1.46  1.38   1.54   0.457
+#> 1 Subject   Variance    1.08  0.812  1.60   0.335
+#> 2 Rater     Variance    0.699 0.476  1.25   0.216
+#> 3 Residual  Variance    1.45  1.38   1.54   0.448
 #> 
 #> # Intercept Estimates
 #> # A tibble: 108 × 6
 #>    component id    term      estimate   lower  upper
 #>    <chr>     <chr> <chr>        <dbl>   <dbl>  <dbl>
-#>  1 Rater     1     Intercept    0.885  0.463   1.35 
-#>  2 Rater     2     Intercept    1.72   1.24    2.12 
-#>  3 Rater     3     Intercept    0.573  0.109   1.01 
-#>  4 Rater     4     Intercept   -1.19  -1.64   -0.737
-#>  5 Rater     5     Intercept    0.497  0.0437  0.953
-#>  6 Rater     6     Intercept    1.32   0.864   1.75 
-#>  7 Rater     7     Intercept    0.239 -0.216   0.677
-#>  8 Rater     8     Intercept   -0.149 -0.626   0.289
-#>  9 Rater     9     Intercept   -0.716 -1.18   -0.276
-#> 10 Rater     10    Intercept   -1.76  -2.22   -1.34 
+#>  1 Rater     1     Intercept    0.897  0.456   1.37 
+#>  2 Rater     2     Intercept    1.70   1.22    2.15 
+#>  3 Rater     3     Intercept    0.576  0.0963  1.01 
+#>  4 Rater     4     Intercept   -1.16  -1.65   -0.716
+#>  5 Rater     5     Intercept    0.520  0.0532  0.972
+#>  6 Rater     6     Intercept    1.29   0.856   1.77 
+#>  7 Rater     7     Intercept    0.219 -0.221   0.699
+#>  8 Rater     8     Intercept   -0.157 -0.617   0.285
+#>  9 Rater     9     Intercept   -0.732 -1.18   -0.280
+#> 10 Rater     10    Intercept   -1.75  -2.22   -1.31 
 #> # … with 98 more rows
 ```
 

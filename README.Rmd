@@ -87,6 +87,7 @@ res_2 <- calc_icc(
   subject = "Target",
   rater = "Rater",
   score = "Score",
+  k = 12,
   file = "m2"
 )
 res_2
