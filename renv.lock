@@ -187,6 +187,17 @@
         "tidyselect"
       ]
     },
+    "bayestestR": {
+      "Package": "bayestestR",
+      "Version": "0.13.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "caecf6cf095962f3d6645ddab4c691e8",
+      "Requirements": [
+        "datawizard",
+        "insight"
+      ]
+    },
     "beeswarm": {
       "Package": "beeswarm",
       "Version": "0.4.0",
@@ -446,6 +457,16 @@
       "Repository": "CRAN",
       "Hash": "aecef50008ea7b57c76f1cb5c127fb02",
       "Requirements": []
+    },
+    "datawizard": {
+      "Package": "datawizard",
+      "Version": "0.6.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6af559e24be9cec37516e37a00a6cfc3",
+      "Requirements": [
+        "insight"
+      ]
     },
     "desc": {
       "Package": "desc",
@@ -884,6 +905,14 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "1deaf1de3eac7e1d3377954b3a283652",
+      "Requirements": []
+    },
+    "insight": {
+      "Package": "insight",
+      "Version": "0.18.8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "63e5c0b19f7a78e13cda42e1c3b03549",
       "Requirements": []
     },
     "isoband": {

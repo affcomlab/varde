@@ -2,31 +2,32 @@
 #' @export
 #' @importFrom graphics plot
 plot.varde_icc <- function(x,
-                           components = "all",
+                           parameters = NULL,
                            font_size = 10,
                            ...) {
 
-  match.arg(components, choices = c("all", "var", "icc"))
+  post <- cbind(x$vars_posterior, x$iccs_posterior)
 
-  if (components == "var") {
-    post <- x$posterior[, 1:3]
-    terms <- x$summary$term[1:3]
-  } else if (components == "icc") {
-    post <- x$posterior[, 4:9]
-    terms<- x$summary$term[4:9]
-  } else {
-    post <- x$posterior
-    terms <- x$summary$term
+  assertthat::assert_that(
+    rlang::is_null(parameters) || all(parameters %in% colnames(post)),
+    msg = "parameter value not found, check spelling"
+  )
+  assertthat::assert_that(rlang::is_double(font_size, n = 1, finite = TRUE))
+
+  colnames(post)[1:3] <- paste0(colnames(post)[1:3], " Variance")
+
+  if (!rlang::is_null(parameters)) {
+    post <- post[, parameters]
   }
-  colnames(post) <- terms
+
   out <-
     tibble::as_tibble(post) |>
     tidyr::pivot_longer(
-      cols = tidyr::everything(),
+      cols = colnames(post),
       names_to = "Term",
       values_to = "Estimate"
     ) |>
-    dplyr::mutate(Term = factor(Term, levels = terms)) |>
+    dplyr::mutate(Term = factor(Term, levels = colnames(post))) |>
     ggplot2::ggplot(ggplot2::aes(x = Estimate)) +
     ggplot2::facet_wrap(~Term, scales = "free") +
     ggplot2::geom_density(fill = "lightblue", alpha = 1/2) +

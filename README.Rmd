@@ -42,7 +42,7 @@ ppa_type1 <- ppa[ppa$Type == 1, ]
 
 ### Simple Generalizability Study
 
-```{r res_1, message=FALSE, cache=TRUE}
+```{r res_1, message=FALSE}
 # Fit a mixed effects model with target and rater effects
 fit_1 <- brms::brm(
   formula = Score ~ 1 + (1 | Target) + (1 | Rater),
@@ -52,7 +52,8 @@ fit_1 <- brms::brm(
   init = "random",
   warmup = 5000,
   iter = 10000,
-  seed = 2022
+  seed = 2022,
+  file = "m1"
 )
 ```
 
@@ -79,23 +80,24 @@ plot(res_1, type = "intercepts")
 
 ### Simple Two-Way ICC for Inter-Rater Reliability
 
-```{r res_2, message=FALSE, cache=TRUE}
+```{r res_2, message=FALSE}
 # Calculate variance components and ICCs
 res_2 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
   rater = "Rater",
-  score = "Score"
+  score = "Score",
+  file = "m2"
 )
 res_2
 ```
 
 ```{r p2a, fig.width=7, fig.height=5}
 # Create density plot of all posteriors
-plot(res_2, components = "all")
+plot(res_2)
 ```
 
-```{r p2b, fig.width=7, fig.height=5}
-# Create density plot of ICC posteriors
-plot(res_2, components = "icc")
+```{r p2b, fig.width=5, fig.height=2}
+# Create density plot of specific posteriors
+plot(res_2, parameters = c("ICC(A,k)", "ICC(C,k)"))
 ```

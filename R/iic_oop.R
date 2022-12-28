@@ -8,23 +8,47 @@ new_srm <- function(x, ...) {
   structure(x, ..., class = "varde_srm")
 }
 
-new_icc <- function(summary = tibble::tibble(),
-                    model = list(),
-                    posterior = matrix()) {
-  stopifnot(tibble::is_tibble(summary))
+new_icc <- function(iccs_summary = tibble::tibble(),
+                    vars_summary = tibble::tibble(),
+                    ints_summary = tibble::tibble(),
+                    iccs_posterior = matrix(),
+                    vars_posterior = matrix(),
+                    ints_posterior = matrix(),
+                    model = list()) {
+
+  stopifnot(tibble::is_tibble(iccs_summary))
+  stopifnot(tibble::is_tibble(vars_summary))
+  stopifnot(tibble::is_tibble(ints_summary))
+  stopifnot(is.matrix(iccs_posterior))
+  stopifnot(is.matrix(vars_posterior))
+  stopifnot(is.matrix(ints_posterior))
   stopifnot(inherits(model, "brmsfit"))
-  stopifnot(is.matrix(posterior))
+
   structure(
-    list(summary = summary, model = model, posterior = posterior),
+    list(
+      iccs_summary = iccs_summary,
+      vars_summary = vars_summary,
+      ints_summary = ints_summary,
+      iccs_posterior = iccs_posterior,
+      vars_posterior = vars_posterior,
+      ints_posterior = ints_posterior,
+      model = model
+    ),
     class = "varde_icc"
   )
 }
 
 # S3 Helper
-varde_icc <- function(summary = tibble(),
-                      model = list(),
-                      posterior = matrix()) {
-  new_icc(summary, model, posterior)
+varde_icc <- function(iccs_summary = tibble::tibble(),
+                      vars_summary = tibble::tibble(),
+                      ints_summary = tibble::tibble(),
+                      iccs_posterior = matrix(),
+                      vars_posterior = matrix(),
+                      ints_posterior = matrix(),
+                      model = list()) {
+
+  new_icc(iccs_summary, vars_summary, ints_summary,
+          iccs_posterior, vars_posterior, ints_posterior, model)
 }
 
 # S3 Generics -------------------------------------------------------------
@@ -204,6 +228,34 @@ calc_q.data.frame <- function(.data,
 
 #' @export print.varde_icc
 #' @export
-print.varde_icc <- function(x, ...) {
-  print(x$summary, ...)
+print.varde_icc <- function(x, variances = TRUE, intercepts = TRUE, ...) {
+  cat(crayon::blue("# ICC Estimates\n"))
+  print(x$iccs_summary, ...)
+  if (variances) {
+    cat(crayon::blue("\n# Variance Estimates\n"))
+    print(x$vars_summary, ...)
+  }
+  if (intercepts) {
+    cat(crayon::blue("\n# Intercept Estimates\n"))
+    print(x$ints_summary, ...)
+  }
+}
+
+#' @export summary.varde_icc
+#' @export
+summary.varde_icc <- function(x,
+                              which = "iccs",
+                              ...) {
+
+  match.arg(which, choices = c("iccs", "variances", "intercepts", "model"))
+  if (which == "iccs") {
+    out <- x$iccs_summary
+  } else if (which == "variances") {
+    out <- x$vars_summary
+  } else if (which == "intercepts") {
+    out <- x$ints_summary
+  } else if (which == "model") {
+    out <- summary(x$model, ...)
+  }
+  out
 }

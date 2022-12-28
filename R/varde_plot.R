@@ -54,6 +54,9 @@ plot.varde_res <- function(x,
       ggplot2::scale_fill_discrete() +
       ggplot2::theme_void()
   } else if (type == "variances") {
+    append_var <- function(string) {
+      paste0(string, " Variance")
+    }
     posterior_df <- x$vars_posterior
     out <-
       tibble::as_tibble(posterior_df) |>
@@ -62,22 +65,30 @@ plot.varde_res <- function(x,
         names_to = "Component",
         values_to = "Variance"
       ) |>
+      dplyr::mutate(
+        Component = forcats::fct_relevel(Component, "Residual", after = Inf)
+      ) |>
       ggplot2::ggplot(ggplot2::aes(x = Variance)) +
-      ggplot2::facet_wrap(~Component, scales = "free") +
+      ggplot2::facet_wrap(
+        ~Component,
+        scales = "free",
+        labeller = ggplot2::labeller(.default = append_var)
+      ) +
       ggplot2::geom_density(fill = "lightblue", alpha = 1/2) +
       ggplot2::scale_x_continuous() +
-      ggplot2::labs(y = "Posterior Density") +
+      ggplot2::labs(y = "Posterior Density", x = "Estimate") +
       ggplot2::theme_grey(base_size = font_size)
   } else if (type == "intercepts") {
     summary_df <- x$ints_summary
     out <-
       summary_df |>
+      dplyr::mutate(strip_label = paste0(component, " ", term)) |>
       ggplot2::ggplot(ggplot2::aes(x = estimate, y = 1)) +
-      ggplot2::facet_wrap(~component, scales = "free") +
+      ggplot2::facet_wrap(~strip_label, scales = "free") +
       ggbeeswarm::geom_quasirandom() +
       ggplot2::scale_x_continuous() +
       ggplot2::scale_y_discrete() +
-      ggplot2::labs(x = "Estimated Intercept", y = NULL) +
+      ggplot2::labs(x = "Estimate", y = NULL) +
       ggplot2::theme_grey(base_size = font_size)
     if (interactive) {
       require("plotly")

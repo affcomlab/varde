@@ -156,7 +156,7 @@ calc_icc.data.frame <- function(.data,
   if (twoway) {
     formula <- paste0(score, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')')
   } else {
-    # TODO: Check if this is necessary
+    # TODO: Check if an explicitly one-way model is necessary
     formula <- paste0(score, ' ~ 1 + (1 | ', subject, ')')
   }
 
@@ -172,38 +172,25 @@ calc_icc.data.frame <- function(.data,
   )
 
   # Extract posterior draws from model
-  if (twoway) {
-    brms_names <- c(
-      paste0("sd_", subject, "__Intercept"),
-      paste0("sd_", rater, "__Intercept"),
-      "sigma"
-    )
-    icc_names <- c(subject_label, rater_label, residual_label)
-  } else {
-    brms_names <- c(
-      paste0("sd_", subject, "__Intercept"),
-      "sigma"
-    )
-    icc_names <- c(subject_label, residual_label)
-  }
-  sds <- brms::as_draws_matrix(
-    x = fit,
-    variable = brms_names,
-    inc_warmup = FALSE
-  )
-  colnames(sds) <- icc_names
+  res <- varde(fit, ci = ci)
 
-  # Convert estimates to variances
-  vars <- sds^2
+  if (twoway) {
+    var_labels <- c(subject_label, rater_label, residual_label)
+  } else {
+    var_labels <- c(subject_label, residual_label)
+  }
+
+  colnames(res$vars_posterior) <- var_labels
+  res$vars_summary$component <- var_labels
 
   # Extract posterior draws as vectors
-  vs <-  as.vector(vars[, subject_label])
+  vs <-  as.vector(res$vars_posterior[, subject_label])
   if (twoway) {
-    vr <- as.vector(vars[, rater_label])
+    vr <- as.vector(res$vars_posterior[, rater_label])
   } else {
     vr <- rep(NA_real_, length(vs))
   }
-  vsr <- as.vector(vars[, residual_label])
+  vsr <- as.vector(res$vars_posterior[, residual_label])
 
   # Calculate the harmonic mean of the number of raters per subject
   khat <- calc_khat(srm)
@@ -211,56 +198,34 @@ calc_icc.data.frame <- function(.data,
   # Calculate the proportion of non-overlap for raters and subjects
   q <- calc_q(srm)
 
-  icc_post <- list(
-    var_s = vs,
-    var_r = vr,
-    var_e = vsr,
-    icc_a_1 = vs / (vs + vr + vsr),
-    icc_a_k = vs / (vs + (vr + vsr) / k),
-    icc_a_khat = vs / (vs + (vr + vsr) / khat),
-    icc_c_1 = vs / (vs + vsr),
-    icc_c_k = vs / (vs + vsr / k),
-    icc_q_khat = vs / (vs + q * vr + vsr / khat)
+  # Calculate posterior for each intraclass correlation coefficient
+  iccs <- cbind(
+    "ICC(A,1)" = vs / (vs + vr + vsr),
+    "ICC(A,k)" = vs / (vs + (vr + vsr) / k),
+    "ICC(A,khat)" = vs / (vs + (vr + vsr) / khat),
+    "ICC(C,1)" = vs / (vs + vsr),
+    "ICC(C,k)" = vs / (vs + vsr / k),
+    "ICC(Q,khat)" = vs / (vs + q * vr + vsr / khat)
   )
 
-  # Calculate point estimates
-  icc_est <- vapply(
-    X = icc_post,
-    FUN = post_mode,
-    FUN.VALUE = double(1)
-  )
-
-  # Calculate equal tail intervals
-  icc_eti <- vapply(
-    X = icc_post,
-    FUN = stats::quantile,
-    FUN.VALUE = double(2),
-    probs = c(
-      (1 - ci) / 2,
-      ci + (1 - ci) / 2
-    )
-  )
-
-  # Construct output tibble
-  summary_df <-
+  # Construct ICC output tibble
+  iccs_summary <-
     tibble(
-      term = c(
-        paste0(subject_label, " Variance"),
-        paste0(rater_label, " Variance"),
-        paste0(residual_label, " Variance"),
-        "ICC(A,1)", "ICC(A,k)", "ICC(A,khat)",
-        "ICC(C,1)", "ICC(C,k)", "ICC(Q,khat)"
-      ),
-      est = icc_est,
-      lower = icc_eti[1, ],
-      upper = icc_eti[2, ],
-      raters = c(NA_integer_, NA_integer_, NA_integer_, 1, k, khat, 1, k, khat),
-      error = rep(c(NA_character_, "Absolute", "Relative"), each = 3)
+      term = colnames(iccs),
+      est = get_point_estimates(iccs),
+      lower = get_ci_lower(iccs, ci = ci),
+      upper = get_ci_upper(iccs, ci = ci),
+      raters = c(1, k, khat, 1, k, khat),
+      error = rep(c("Absolute", "Relative"), each = 3)
     )
 
   varde_icc(
-    summary = summary_df,
-    posterior = do.call(cbind, icc_post),
+    iccs_summary = iccs_summary,
+    iccs_posterior = iccs,
+    vars_summary = res$vars_summary,
+    vars_posterior = res$vars_posterior,
+    ints_summary = res$ints_summary,
+    ints_posterior = res$ints_posterior,
     model = fit
   )
 

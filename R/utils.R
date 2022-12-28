@@ -25,12 +25,6 @@ check_convergence.brmsfit <- function(model) {
   !any(abs(brms::rhat(model) - 1) > .1)
 }
 
-# Calculate the mode of a continuous distribution
-post_mode <- function(x) {
-  d <- stats::density(x)
-  d$x[which.max(d$y)]
-}
-
 is_balanced <- function(.data, subject, rater) {
   # How many raters scored each subject?
   ks <- rowSums(table(.data[[subject]], by = .data[[rater]]))
