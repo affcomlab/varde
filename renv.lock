@@ -43,6 +43,14 @@
         "promises"
       ]
     },
+    "HDInterval": {
+      "Package": "HDInterval",
+      "Version": "0.2.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "b5b77433b286dd869ff33ee7fd5c545f",
+      "Requirements": []
+    },
     "MASS": {
       "Package": "MASS",
       "Version": "7.3-58.1",
@@ -187,17 +195,6 @@
         "tidyselect"
       ]
     },
-    "bayestestR": {
-      "Package": "bayestestR",
-      "Version": "0.13.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "caecf6cf095962f3d6645ddab4c691e8",
-      "Requirements": [
-        "datawizard",
-        "insight"
-      ]
-    },
     "beeswarm": {
       "Package": "beeswarm",
       "Version": "0.4.0",
@@ -223,14 +220,6 @@
       "Requirements": [
         "bit"
       ]
-    },
-    "boot": {
-      "Package": "boot",
-      "Version": "1.3-28.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "9a052fbcbe97a98ceb18dbfd30ebd96e",
-      "Requirements": []
     },
     "bridgesampling": {
       "Package": "bridgesampling",
@@ -458,16 +447,6 @@
       "Hash": "aecef50008ea7b57c76f1cb5c127fb02",
       "Requirements": []
     },
-    "datawizard": {
-      "Package": "datawizard",
-      "Version": "0.6.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "6af559e24be9cec37516e37a00a6cfc3",
-      "Requirements": [
-        "insight"
-      ]
-    },
     "desc": {
       "Package": "desc",
       "Version": "1.4.2",
@@ -674,6 +653,27 @@
         "ggplot2",
         "lifecycle",
         "vipor"
+      ]
+    },
+    "ggdist": {
+      "Package": "ggdist",
+      "Version": "3.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "da5ae53a708eb6f8d2f9ec6acd188fd9",
+      "Requirements": [
+        "HDInterval",
+        "distributional",
+        "dplyr",
+        "ggplot2",
+        "glue",
+        "numDeriv",
+        "rlang",
+        "scales",
+        "tibble",
+        "tidyselect",
+        "vctrs",
+        "withr"
       ]
     },
     "ggforce": {
@@ -907,14 +907,6 @@
       "Hash": "1deaf1de3eac7e1d3377954b3a283652",
       "Requirements": []
     },
-    "insight": {
-      "Package": "insight",
-      "Version": "0.18.8",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "63e5c0b19f7a78e13cda42e1c3b03549",
-      "Requirements": []
-    },
     "isoband": {
       "Package": "isoband",
       "Version": "0.2.7",
@@ -1010,24 +1002,6 @@
       "Hash": "4fbd3679ec8ee169ba28d4b1ea7d0e8f",
       "Requirements": []
     },
-    "lme4": {
-      "Package": "lme4",
-      "Version": "1.1-31",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "67581bdc21e3d5e6881cf47c0c3113eb",
-      "Requirements": [
-        "MASS",
-        "Matrix",
-        "Rcpp",
-        "RcppEigen",
-        "boot",
-        "lattice",
-        "minqa",
-        "nlme",
-        "nloptr"
-      ]
-    },
     "loo": {
       "Package": "loo",
       "Version": "2.5.1",
@@ -1108,16 +1082,6 @@
         "shiny"
       ]
     },
-    "minqa": {
-      "Package": "minqa",
-      "Version": "1.2.5",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "587ce77fd3c7bada7eadb2d18b62930d",
-      "Requirements": [
-        "Rcpp"
-      ]
-    },
     "munsell": {
       "Package": "munsell",
       "Version": "0.5.0",
@@ -1152,16 +1116,6 @@
       "Hash": "b49e163093c0ef46fbbfc40bcb87916c",
       "Requirements": [
         "lattice"
-      ]
-    },
-    "nloptr": {
-      "Package": "nloptr",
-      "Version": "2.0.3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "277c67a08f358f42b6a77826e4492f79",
-      "Requirements": [
-        "testthat"
       ]
     },
     "numDeriv": {

@@ -3,22 +3,6 @@ check_convergence <- function(model) {
   UseMethod("check_convergence")
 }
 
-#' @method check_convergence merMod
-#' @export
-check_convergence.merMod <- function(model, tolerance = 0.001) {
-  rlang::is_installed("Matrix")
-
-  # Check Messages
-  warn <- model@optinfo$conv$lme4$messages
-  okwarn <- is.null(warn) || !grepl('failed to converge', warn)
-
-  # Check Hessian
-  relgrad <- with(model@optinfo$derivs, Matrix::solve(Hessian, gradient))
-  okgrad <- max(abs(relgrad)) < tolerance
-
-  okwarn && okgrad
-}
-
 #' @method check_convergence brmsfit
 #' @export
 check_convergence.brmsfit <- function(model) {
@@ -85,4 +69,9 @@ get_terms <- function(.data, subject, rater, k, error) {
   } else {
     NA_character_
   }
+}
+
+get_estimates <- function(m, method = ggdist::mode_qi, ci = 0.95) {
+  apply(X = m, MARGIN = 2, FUN = method, .width = ci) |>
+    dplyr::bind_rows(.id = "term")
 }

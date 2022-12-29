@@ -10,6 +10,7 @@
   rater = "rater",
   score = "score",
   k = NULL,
+  method = ggdist::mode_qi,
   ci = 0.95,
   chains = 4,
   cores = 4,
@@ -42,6 +43,11 @@ the reliability of to the total number of unique raters observed in \code{.data}
 or an integer specifying the number of raters you would like to estimate
 the reliability of (see details below). (default = \code{NULL})}
 
+\item{method}{A function (ideally from \code{\link[ggdist:point_interval]{ggdist::point_interval()}}) that
+returns a data frame containing a point estimate (\code{y}) and the lower
+(\code{ymin}) and upper (\code{ymax}) bounds of an interval estimate. (default =
+\code{\link[ggdist:point_interval]{ggdist::mode_qi()}})}
+
 \item{ci}{A finite number between 0 and 1 that represents the width of the
 credible intervals to estimate (e.g., 0.95 = 95\% CI). (default = \code{0.95})}
 
@@ -69,10 +75,19 @@ returned output objects and any subsequent plots. (default = \code{"Residual"})}
 \value{
 A list object of class "varde_icc" that includes three main elements:
 \itemize{
-\item \verb{$summary}: A \code{\link[tibble:tibble]{tibble::tibble()}} containing summary information about each
-variance component and ICC estimate.
-\item \verb{$posterior}: A matrix where each row is a single posterior sample and each
-column is either a variance component or ICC estimate.
+\item \verb{$iccs_summary}: A \code{\link[tibble:tibble]{tibble::tibble()}} containing summary information about
+each ICC estimate.
+\item \verb{$vars_summary}: A \code{\link[tibble:tibble]{tibble::tibble()}} containing summary information about
+each variance estimate.
+\item \verb{$ints_summary}: A \code{\link[tibble:tibble]{tibble::tibble()}} containing summary information about
+each random intercept estimate.
+\item \verb{$iccs_posterior}: A matrix where each row is a single posterior sample and
+each column is an ICC estimate.
+\item \verb{$vars_posterior}: A matrix where each row is a single posterior sample and
+each column is a variance estimate.
+\item \verb{$ints_posterior}: A matrix where each row is a single posterior sample and
+each column is a random intercept estimate.
+\item \verb{$config}: A list containing the specified \code{method}, \code{ci}, and \code{k} values.
 \item \verb{$model}: The brmsfit object created by \code{\link[brms:brm]{brms::brm()}} containing the full
 results of the Bayesian generalizability study.
 }

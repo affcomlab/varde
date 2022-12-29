@@ -63,17 +63,17 @@ res_1 <- varde(fit_1)
 res_1
 ```
 
-```{r p1a, fig.width=5, fig.height=4}
+```{r p1a, fig.width=9, fig.height=4, out.width="100%"}
 # Create river plot of variance percentages
 plot(res_1, type = "river")
 ```
 
-```{r p1b, fig.width=7, fig.height=2.5}
+```{r p1b, fig.width=9, fig.height=2.5, out.width="100%", warning=FALSE}
 # Create density plot of variance posteriors
 plot(res_1, type = "variances")
 ```
 
-```{r p1c, fig.width=5, fig.height=2.5}
+```{r p1c, fig.width=9, fig.height=2.5, out.width="100%"}
 # Create jitter plot of random intercepts
 plot(res_1, type = "intercepts")
 ```
@@ -93,12 +93,12 @@ res_2 <- calc_icc(
 res_2
 ```
 
-```{r p2a, fig.width=7, fig.height=5}
+```{r p2a, fig.width=9, fig.height=5, out.width="100%", warning=FALSE}
 # Create density plot of all posteriors
-plot(res_2)
+plot(res_2, panel_spacing = 6)
 ```
 
-```{r p2b, fig.width=5, fig.height=2}
+```{r p2b, fig.width=9, fig.height=2, out.width="100%", warning=FALSE}
 # Create density plot of specific posteriors
 plot(res_2, parameters = c("ICC(A,k)", "ICC(C,k)"))
 ```

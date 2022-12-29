@@ -4,6 +4,8 @@
 plot.varde_icc <- function(x,
                            parameters = NULL,
                            font_size = 10,
+                           fill_color = "lightblue",
+                           panel_spacing = 2,
                            ...) {
 
   post <- cbind(x$vars_posterior, x$iccs_posterior)
@@ -31,10 +33,22 @@ plot.varde_icc <- function(x,
     dplyr::mutate(Term = factor(Term, levels = colnames(post))) |>
     ggplot2::ggplot(ggplot2::aes(x = Estimate)) +
     ggplot2::facet_wrap(~Term, scales = "free") +
-    ggplot2::geom_density(fill = "lightblue", alpha = 1/2) +
+    ggdist::stat_slabinterval(
+      fill = fill_color,
+      normalize = "panels",
+      point_interval = x$config$method,
+      .width = x$config$ci,
+      interval_size = 1.5,
+      ...
+    ) +
     ggplot2::scale_x_continuous() +
     ggplot2::labs(y = "Posterior Density") +
-    ggplot2::theme_grey(base_size = font_size)
+    ggplot2::theme_grey(base_size = font_size) +
+    ggplot2::theme(
+      axis.text.y = ggplot2::element_blank(),
+      axis.ticks.y = ggplot2::element_blank(),
+      panel.spacing.x = ggplot2::unit(panel_spacing, "mm")
+    )
 
   out
 

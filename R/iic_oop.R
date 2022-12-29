@@ -14,6 +14,7 @@ new_icc <- function(iccs_summary = tibble::tibble(),
                     iccs_posterior = matrix(),
                     vars_posterior = matrix(),
                     ints_posterior = matrix(),
+                    config = list(),
                     model = list()) {
 
   stopifnot(tibble::is_tibble(iccs_summary))
@@ -22,6 +23,7 @@ new_icc <- function(iccs_summary = tibble::tibble(),
   stopifnot(is.matrix(iccs_posterior))
   stopifnot(is.matrix(vars_posterior))
   stopifnot(is.matrix(ints_posterior))
+  stopifnot(is.list(config))
   stopifnot(inherits(model, "brmsfit"))
 
   structure(
@@ -32,6 +34,7 @@ new_icc <- function(iccs_summary = tibble::tibble(),
       iccs_posterior = iccs_posterior,
       vars_posterior = vars_posterior,
       ints_posterior = ints_posterior,
+      config = config,
       model = model
     ),
     class = "varde_icc"
@@ -45,10 +48,19 @@ varde_icc <- function(iccs_summary = tibble::tibble(),
                       iccs_posterior = matrix(),
                       vars_posterior = matrix(),
                       ints_posterior = matrix(),
+                      config = list(),
                       model = list()) {
 
-  new_icc(iccs_summary, vars_summary, ints_summary,
-          iccs_posterior, vars_posterior, ints_posterior, model)
+  new_icc(
+    iccs_summary,
+    vars_summary,
+    ints_summary,
+    iccs_posterior,
+    vars_posterior,
+    ints_posterior,
+    config,
+    model
+  )
 }
 
 # S3 Generics -------------------------------------------------------------

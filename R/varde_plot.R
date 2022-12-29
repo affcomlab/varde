@@ -5,7 +5,9 @@ plot.varde_res <- function(x,
                            type = "river",
                            font_size = 10,
                            xlim = c(4.75, 6.5),
+                           fill_color = "lightblue",
                            interactive = FALSE,
+                           panel_spacing = 2,
                            ...) {
 
   match.arg(type, choices = c("river", "variances", "intercepts"))
@@ -74,10 +76,22 @@ plot.varde_res <- function(x,
         scales = "free",
         labeller = ggplot2::labeller(.default = append_var)
       ) +
-      ggplot2::geom_density(fill = "lightblue", alpha = 1/2) +
+      ggdist::stat_slabinterval(
+        fill = fill_color,
+        normalize = "panels",
+        point_interval = x$config$method,
+        .width = x$config$ci,
+        interval_size = 1.5,
+        ...
+      ) +
       ggplot2::scale_x_continuous() +
       ggplot2::labs(y = "Posterior Density", x = "Estimate") +
-      ggplot2::theme_grey(base_size = font_size)
+      ggplot2::theme_grey(base_size = font_size) +
+      ggplot2::theme(
+        axis.text.y = ggplot2::element_blank(),
+        axis.ticks.y = ggplot2::element_blank(),
+        panel.spacing.x = ggplot2::unit(panel_spacing, "mm")
+      )
   } else if (type == "intercepts") {
     summary_df <- x$ints_summary
     out <-

@@ -50,6 +50,7 @@ calc_icc <- function(.data,
                      rater = "rater",
                      score = "score",
                      k = NULL,
+                     method = ggdist::mode_qi,
                      ci = 0.95,
                      chains = 4,
                      cores = 4,
@@ -82,6 +83,10 @@ calc_icc <- function(.data,
 #'   the reliability of to the total number of unique raters observed in `.data`
 #'   or an integer specifying the number of raters you would like to estimate
 #'   the reliability of (see details below). (default = `NULL`)
+#' @param method A function (ideally from [ggdist::point_interval()]) that
+#'   returns a data frame containing a point estimate (`y`) and the lower
+#'   (`ymin`) and upper (`ymax`) bounds of an interval estimate. (default =
+#'   [ggdist::mode_qi()])
 #' @param ci A finite number between 0 and 1 that represents the width of the
 #'   credible intervals to estimate (e.g., 0.95 = 95% CI). (default = `0.95`)
 #' @param chains An integer representing the number of Markov chains to use in
@@ -99,10 +104,19 @@ calc_icc <- function(.data,
 #'   returned output objects and any subsequent plots. (default = `"Residual"`)
 #' @param ... Further arguments passed to [brms::brm()].
 #' @return A list object of class "varde_icc" that includes three main elements:
-#' * `$summary`: A [tibble::tibble()] containing summary information about each
-#'   variance component and ICC estimate.
-#' * `$posterior`: A matrix where each row is a single posterior sample and each
-#'   column is either a variance component or ICC estimate.
+#' * `$iccs_summary`: A [tibble::tibble()] containing summary information about
+#'   each ICC estimate.
+#' * `$vars_summary`: A [tibble::tibble()] containing summary information about
+#'   each variance estimate.
+#' * `$ints_summary`: A [tibble::tibble()] containing summary information about
+#'   each random intercept estimate.
+#' * `$iccs_posterior`: A matrix where each row is a single posterior sample and
+#'   each column is an ICC estimate.
+#' * `$vars_posterior`: A matrix where each row is a single posterior sample and
+#'   each column is a variance estimate.
+#' * `$ints_posterior`: A matrix where each row is a single posterior sample and
+#'   each column is a random intercept estimate.
+#' * `$config`: A list containing the specified `method`, `ci`, and `k` values.
 #' * `$model`: The brmsfit object created by [brms::brm()] containing the full
 #'   results of the Bayesian generalizability study.
 #' @method calc_icc data.frame
@@ -112,6 +126,7 @@ calc_icc.data.frame <- function(.data,
                      rater = "rater",
                      score = "score",
                      k = NULL,
+                     method = ggdist::mode_qi,
                      ci = 0.95,
                      chains = 4,
                      cores = 4,
@@ -209,23 +224,26 @@ calc_icc.data.frame <- function(.data,
   )
 
   # Construct ICC output tibble
+  iccs_estimates <- get_estimates(iccs, method = method, ci = ci)
+
   iccs_summary <-
     tibble(
       term = colnames(iccs),
-      estimate = get_point_estimates(iccs),
-      lower = get_ci_lower(iccs, ci = ci),
-      upper = get_ci_upper(iccs, ci = ci),
+      estimate = iccs_estimates$y,
+      lower = iccs_estimates$ymin,
+      upper = iccs_estimates$ymax,
       raters = c(1, k, khat, 1, k, khat),
       error = rep(c("Absolute", "Relative"), each = 3)
     )
 
   varde_icc(
     iccs_summary = iccs_summary,
-    iccs_posterior = iccs,
     vars_summary = res$vars_summary,
-    vars_posterior = res$vars_posterior,
     ints_summary = res$ints_summary,
+    iccs_posterior = iccs,
+    vars_posterior = res$vars_posterior,
     ints_posterior = res$ints_posterior,
+    config = list(method = method, ci = ci, k = k),
     model = fit
   )
 

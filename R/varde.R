@@ -2,7 +2,7 @@
 
 #' @method varde brmsfit
 #' @export
-varde.brmsfit <- function(model, ci = 0.95) {
+varde.brmsfit <- function(model, method = ggdist::mode_qi, ci = 0.95) {
 
   assertthat::assert_that(check_convergence(model) == TRUE)
   assertthat::assert_that(rlang::is_double(ci, n = 1), ci > 0, ci < 1)
@@ -24,19 +24,17 @@ varde.brmsfit <- function(model, ci = 0.95) {
   colnames(vars) <- gsub("sigma", "Residual", colnames(vars))
 
   # Calculate posterior estimates
-  vars_est <- get_point_estimates(vars)
-  vars_clo <- get_ci_lower(vars, ci)
-  vars_chi <- get_ci_upper(vars, ci)
+  vars_estimates <- get_estimates(vars, method = method, ci = ci)
 
   # Construct variances summary tibble
   vars_summary <-
     tibble(
       component = colnames(vars),
       term = "Variance",
-      estimate = vars_est,
-      lower = vars_clo,
-      upper = vars_chi,
-      percent = vars_est / sum(vars_est)
+      estimate = vars_estimates$y,
+      lower = vars_estimates$ymin,
+      upper = vars_estimates$ymax,
+      percent = vars_estimates$y / sum(vars_estimates$y)
     )
 
   # Extract posterior draws for random intercept parameters
@@ -53,13 +51,14 @@ varde.brmsfit <- function(model, ci = 0.95) {
   colnames(ints) <- gsub("\\[", "\\_", colnames(ints))
 
   # Construct random intercepts summary tibble
+  ints_estimates <- get_estimates(ints, method = method, ci = ci)
   ints_summary <-
     tibble(
       component = colnames(ints),
       term = "Intercept",
-      estimate = get_point_estimates(ints, point_estimate),
-      lower = get_ci_lower(ints, ci),
-      upper = get_ci_upper(ints, ci)
+      estimate = ints_estimates$y,
+      lower = ints_estimates$ymin,
+      upper = ints_estimates$ymax
     ) |>
     tidyr::separate(col = component, into = c("component", "id"), sep = "_")
 
@@ -68,24 +67,13 @@ varde.brmsfit <- function(model, ci = 0.95) {
     vars_posterior = vars,
     ints_summary = ints_summary,
     ints_posterior = ints,
+    config = list(method = method, ci = ci),
     model = model
   )
 }
 
 #' @method varde varde_icc
 #' @export
-varde.varde_icc <- function(x, ci = 0.95) {
-  varde(x$model, ci = ci)
-}
-
-get_point_estimates <- function(m, .f = "mode") {
-  apply(X = m, MARGIN = 2, FUN = bayestestR::map_estimate)
-}
-
-get_ci_lower <- function(m, ci = 0.95) {
-  apply(X = m, MARGIN = 2, FUN = stats::quantile, probs = (1 - ci) / 2)
-}
-
-get_ci_upper <- function(m, ci = 0.95) {
-  apply(X = m, MARGIN = 2, FUN = stats::quantile, probs = ci + (1 - ci) / 2)
+varde.varde_icc <- function(x, ...) {
+  varde(x$model, method = x$config$method, ci = x$config$ci)
 }

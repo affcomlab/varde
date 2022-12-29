@@ -1,6 +1,6 @@
 # S3 Generic
 #' @export
-varde <- function(model, ci = 0.95) {
+varde <- function(model, ...) {
   UseMethod("varde")
 }
 
@@ -10,12 +10,14 @@ new_varde_res <- function(vars_summary = tibble(),
                           ints_summary = tibble(),
                           vars_posterior = matrix(),
                           ints_posterior = matrix(),
+                          config = list(),
                           model = list()) {
 
   stopifnot(tibble::is_tibble(vars_summary))
   stopifnot(tibble::is_tibble(ints_summary))
   stopifnot(is.matrix(vars_posterior))
   stopifnot(is.matrix(ints_posterior))
+  stopifnot(is.list(config))
   stopifnot(is.list(model), inherits(model, "brmsfit"))
 
   structure(
@@ -24,6 +26,7 @@ new_varde_res <- function(vars_summary = tibble(),
       ints_summary = ints_summary,
       vars_posterior = vars_posterior,
       ints_posterior = ints_posterior,
+      config = config,
       model = model
     ),
     class = "varde_res"
@@ -35,12 +38,14 @@ varde_res <- function(vars_summary = tibble(),
                       ints_summary = tibble(),
                       vars_posterior = matrix(),
                       ints_posterior = matrix(),
+                      config = list(),
                       model = list()) {
   new_varde_res(
     vars_summary,
     ints_summary,
     vars_posterior,
     ints_posterior,
+    config,
     model
   )
 }
