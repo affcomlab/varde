@@ -212,7 +212,7 @@ calc_icc.data.frame <- function(.data,
   iccs_summary <-
     tibble(
       term = colnames(iccs),
-      est = get_point_estimates(iccs),
+      estimate = get_point_estimates(iccs),
       lower = get_ci_lower(iccs, ci = ci),
       upper = get_ci_upper(iccs, ci = ci),
       raters = c(1, k, khat, 1, k, khat),
