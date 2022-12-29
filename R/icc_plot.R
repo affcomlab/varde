@@ -8,13 +8,14 @@ plot.varde_icc <- function(x,
 
   post <- cbind(x$vars_posterior, x$iccs_posterior)
 
+  assertthat::assert_that(rlang::is_double(font_size, n = 1, finite = TRUE))
+
+  colnames(post)[1:3] <- paste0(colnames(post)[1:3], " Variance")
+
   assertthat::assert_that(
     rlang::is_null(parameters) || all(parameters %in% colnames(post)),
     msg = "parameter value not found, check spelling"
   )
-  assertthat::assert_that(rlang::is_double(font_size, n = 1, finite = TRUE))
-
-  colnames(post)[1:3] <- paste0(colnames(post)[1:3], " Variance")
 
   if (!rlang::is_null(parameters)) {
     post <- post[, parameters]
