@@ -151,7 +151,7 @@ res_2
 
 ``` r
 # Create density plot of all posteriors
-plot(res_2, panel_spacing = 6)
+plot(res_2)
 ```
 
 <img src="man/figures/README-p2a-1.png" width="100%" />

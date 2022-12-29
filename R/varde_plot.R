@@ -84,13 +84,19 @@ plot.varde_res <- function(x,
         interval_size = 1.5,
         ...
       ) +
-      ggplot2::scale_x_continuous() +
+      ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = 0.1)) +
       ggplot2::labs(y = "Posterior Density", x = "Estimate") +
       ggplot2::theme_grey(base_size = font_size) +
       ggplot2::theme(
         axis.text.y = ggplot2::element_blank(),
         axis.ticks.y = ggplot2::element_blank(),
-        panel.spacing.x = ggplot2::unit(panel_spacing, "mm")
+        panel.spacing.x = ggplot2::unit(panel_spacing, "mm"),
+        plot.margin = ggplot2::margin(
+          t = font_size,
+          r = font_size,
+          b = font_size,
+          l = font_size
+        )
       )
   } else if (type == "intercepts") {
     summary_df <- x$ints_summary

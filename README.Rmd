@@ -95,7 +95,7 @@ res_2
 
 ```{r p2a, fig.width=9, fig.height=5, out.width="100%", warning=FALSE}
 # Create density plot of all posteriors
-plot(res_2, panel_spacing = 6)
+plot(res_2)
 ```
 
 ```{r p2b, fig.width=9, fig.height=2, out.width="100%", warning=FALSE}
