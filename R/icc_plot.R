@@ -47,6 +47,8 @@ plot.varde_icc <- function(x,
     ggplot2::theme(
       axis.text.y = ggplot2::element_blank(),
       axis.ticks.y = ggplot2::element_blank(),
+      panel.grid.major.y = ggplot2::element_blank(),
+      panel.grid.minor.y = ggplot2::element_blank(),
       panel.spacing.x = ggplot2::unit(panel_spacing, "mm"),
       plot.margin = ggplot2::margin(
         t = font_size,

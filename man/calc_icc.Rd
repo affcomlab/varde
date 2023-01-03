@@ -33,11 +33,6 @@ person, image, or document). (default = \code{"subject"})}
 identifier for the rater or thing providing the score in each row (e.g.,
 rater, judge, or instrument). (default = \code{"rater"})}
 
-\item{score}{A string indicating the column name in \code{.data} that contains the
-numerical score representing the rating of each row's subject from that
-same row's rater (e.g., score, rating, judgment, measurement). (default =
-\code{"score"})}
-
 \item{k}{Either \code{NULL} to set the number of raters you would like to estimate
 the reliability of to the total number of unique raters observed in \code{.data}
 or an integer specifying the number of raters you would like to estimate

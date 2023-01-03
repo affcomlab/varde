@@ -86,7 +86,7 @@ res_2 <- calc_icc(
   .data = ppa_type1, 
   subject = "Target",
   rater = "Rater",
-  score = "Score",
+  scores = "Score",
   k = 12,
   file = "m2"
 )
@@ -102,3 +102,20 @@ plot(res_2)
 # Create density plot of specific posteriors
 plot(res_2, parameters = c("ICC(A,k)", "ICC(C,k)"))
 ```
+## Multivariate MCMC for ICC
+
+In `posneg`, 110 images were rated by between 2 and 5 raters on how "Negative" and "Positive" they appeared.
+
+```{r res_3, message=FALSE}
+# Calculate variance components and ICCs
+res_3 <- calc_icc(
+  .data = posneg, 
+  subject = "Image",
+  rater = "Rater",
+  scores = c("Negative", "Positive"),
+  file = "m3",
+  control = list(adapt_delta = 0.999)
+)
+res_3
+```
+

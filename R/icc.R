@@ -75,10 +75,10 @@ calc_icc <- function(.data,
 #' @param rater A string indicating the column name in `.data` that contains an
 #'   identifier for the rater or thing providing the score in each row (e.g.,
 #'   rater, judge, or instrument). (default = `"rater"`)
-#' @param score A string indicating the column name in `.data` that contains the
-#'   numerical score representing the rating of each row's subject from that
-#'   same row's rater (e.g., score, rating, judgment, measurement). (default =
-#'   `"score"`)
+#' @param scores A character vector indicating the column names in `.data` that
+#'   contain the numerical scores representing the rating of each row's subject
+#'   from that same row's rater (e.g., score, rating, judgment, measurement).
+#'   (default = `c("score1", "score2")`)
 #' @param k Either `NULL` to set the number of raters you would like to estimate
 #'   the reliability of to the total number of unique raters observed in `.data`
 #'   or an integer specifying the number of raters you would like to estimate
@@ -122,44 +122,55 @@ calc_icc <- function(.data,
 #' @method calc_icc data.frame
 #' @export
 calc_icc.data.frame <- function(.data,
-                     subject = "subject",
-                     rater = "rater",
-                     score = "score",
-                     k = NULL,
-                     method = ggdist::mode_qi,
-                     ci = 0.95,
-                     chains = 4,
-                     cores = 4,
-                     iter = 5000,
-                     subject_label = "Subject",
-                     rater_label = "Rater",
-                     residual_label = "Residual",
-                     ...) {
+                                subject = "subject",
+                                rater = "rater",
+                                scores = c("score1", "score2"),
+                                k = NULL,
+                                method = ggdist::mode_qi,
+                                ci = 0.95,
+                                chains = 4,
+                                cores = 4,
+                                iter = 5000,
+                                ...) {
 
-  assertthat::assert_that(rlang::is_null(k) || rlang::is_integerish(k, n = 1))
-  assertthat::assert_that(rlang::is_double(ci, n = 1, finite = TRUE),
-                          ci > 0, ci < 1)
-  assertthat::assert_that(rlang::is_integerish(chains, n = 1, finite = TRUE),
-                          chains >= 1)
+  assertthat::assert_that(
+    rlang::is_null(k) || rlang::is_integerish(k, n = 1)
+  )
+  assertthat::assert_that(
+    rlang::is_double(ci, n = 1, finite = TRUE),
+    ci > 0, ci < 1
+  )
+  assertthat::assert_that(
+    rlang::is_integerish(chains, n = 1, finite = TRUE),
+    chains >= 1
+  )
 
-  # Create logical subject-rater matrix
-  srm <- create_srm(.data, subject, rater, score)
+  # How many score variables were provided?
+  v <- length(scores)
+
+  # Create logical subject-rater matrices
+  srm <- lapply(
+    X = scores,
+    FUN = create_srm,
+    .data = .data,
+    subject = subject,
+    rater = rater
+  )
+  names(srm) <- scores
 
   # Count the number of raters who scored each subject
-  ks <- rowSums(srm)
+  ks <- lapply(X = srm, FUN = rowSums)
 
   # Count the number of subjects scored by each rater
-  nk <- colSums(srm)
+  nk <- lapply(X = srm, FUN = colSums)
 
   # Remove all subjects that had no raters
-  .data <- .data[.data[[subject]] %in% names(ks[ks > 0]), ]
-  # TODO: Check whether we should remove ks == 1 as well as ks == 0
+  keep <- lapply(ks, function(x) names(x[x > 0])) |> unlist() |> unique()
+  .data <- .data[.data[[subject]] %in% keep, ]
 
   # Remove all raters that had no subjects
-  .data <- .data[.data[[rater]] %in% names(nk[nk > 0]), ]
-
-  # Update subject-rater matrix
-  srm <- create_srm(.data, subject, rater, score)
+  keep <- lapply(nk, function(x) names(x[x > 0])) |> unlist() |> unique()
+  .data <- .data[.data[[rater]] %in% keep, ]
 
   # If not specified, set k as the number of unique raters
   if (is.null(k)) {
@@ -168,11 +179,27 @@ calc_icc.data.frame <- function(.data,
 
   # Construct mixed-effects formula
   twoway <- is_twoway(.data, subject, rater)
-  if (twoway) {
-    formula <- paste0(score, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')')
+  # TODO: Check that is_twoway() works correctly for mv models
+  if (twoway && v == 1) {
+    formula <- brms::bf(paste0(
+      scores, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')'
+    ))
+  } else if (!twoway && v == 1) {
+    formula <- brms::bf(paste0(
+      scores, ' ~ 1 + (1 | ', subject, ')'
+    ))
+  } else if (twoway && v > 1) {
+    formula <- brms::bf(paste0(
+      'mvbind(', paste(scores, collapse = ", "), ') | mi() ~ ',
+      '1 + (1 | ', subject, ') + (1 | ', rater, ')'
+    )) + brms::set_rescor(FALSE)
+  } else if (!twoway && v > 1) {
+    formula <- brms::bf(paste0(
+      'mvbind(', paste(scores, collapse = ", "), ') | mi() ~ ',
+      '1 + (1 | ', subject, ')'
+    )) + brms::set_rescor(FALSE)
   } else {
-    # TODO: Check if an explicitly one-way model is necessary
-    formula <- paste0(score, ' ~ 1 + (1 | ', subject, ')')
+    stop("Error determining model type")
   }
 
   # Fit Bayesian mixed-effects model
@@ -189,38 +216,63 @@ calc_icc.data.frame <- function(.data,
   # Extract posterior draws from model
   res <- varde(fit, ci = ci)
 
-  if (twoway) {
-    var_labels <- c(subject_label, rater_label, residual_label)
+  # Extract posterior draws as matrices
+  if (v > 1) {
+    vs <-  res$vars_posterior[, paste(subject, scores, sep = "__")]
+    if (twoway) {
+      vr <- res$vars_posterior[, paste(rater, scores, sep = "__")]
+    } else {
+      vr <- rep(NA_real_, length(vs))
+    }
+    vsr <- res$vars_posterior[, paste("Residual", scores, sep = "__")]
   } else {
-    var_labels <- c(subject_label, residual_label)
+    vs <-  res$vars_posterior[, subject]
+    if (twoway) {
+      vr <- res$vars_posterior[, rater]
+    } else {
+      vr <- rep(NA_real_, length(vs))
+    }
+    vsr <- res$vars_posterior[, "Residual"]
   }
 
-  colnames(res$vars_posterior) <- var_labels
-  res$vars_summary$component <- var_labels
-
-  # Extract posterior draws as vectors
-  vs <-  as.vector(res$vars_posterior[, subject_label])
-  if (twoway) {
-    vr <- as.vector(res$vars_posterior[, rater_label])
-  } else {
-    vr <- rep(NA_real_, length(vs))
-  }
-  vsr <- as.vector(res$vars_posterior[, residual_label])
+  colnames(vs) <- scores
+  colnames(vr) <- scores
+  colnames(vsr) <- scores
 
   # Calculate the harmonic mean of the number of raters per subject
-  khat <- calc_khat(srm)
+  khat <- lapply(srm, calc_khat)
 
   # Calculate the proportion of non-overlap for raters and subjects
-  q <- calc_q(srm)
+  q <- lapply(srm, calc_q)
+
+  # Make matrices for k, khat, and q
+  kmat <- matrix(rep(k, times = v * nrow(vs)), ncol = v, byrow = TRUE)
+  khatmat <- matrix(
+    rep(unlist(khat), times = nrow(vs)),
+    ncol = v,
+    byrow = TRUE
+  )
+  qmat <- matrix(
+    rep(unlist(q), times = nrow(vs)),
+    ncol = v,
+    byrow = TRUE
+  )
 
   # Calculate posterior for each intraclass correlation coefficient
   iccs <- cbind(
-    "ICC(A,1)" = vs / (vs + vr + vsr),
-    "ICC(A,k)" = vs / (vs + (vr + vsr) / k),
-    "ICC(A,khat)" = vs / (vs + (vr + vsr) / khat),
-    "ICC(C,1)" = vs / (vs + vsr),
-    "ICC(C,k)" = vs / (vs + vsr / k),
-    "ICC(Q,khat)" = vs / (vs + q * vr + vsr / khat)
+    vs / (vs + vr + vsr),
+    vs / (vs + (vr + vsr) / khatmat),
+    vs / (vs + (vr + vsr) / kmat),
+    vs / (vs + vsr),
+    vs / (vs + qmat * vr + vsr / khatmat),
+    vs / (vs + vsr / kmat)
+  )
+  icc_names <- c("ICC(A,1)", "ICC(A,khat)", "ICC(A,k)",
+                 "ICC(C,1)", "ICC(Q,khat)", "ICC(C,k)")
+  colnames(iccs) <- paste(
+    rep(icc_names, each = v),
+    colnames(iccs),
+    sep = "__"
   )
 
   # Construct ICC output tibble
@@ -232,9 +284,16 @@ calc_icc.data.frame <- function(.data,
       estimate = iccs_estimates$y,
       lower = iccs_estimates$ymin,
       upper = iccs_estimates$ymax,
-      raters = c(1, k, khat, 1, k, khat),
-      error = rep(c("Absolute", "Relative"), each = 3)
-    )
+      raters = rep(c(rep(1, v), unlist(khat), rep(k, v)), times = 2),
+      error = rep(c("Absolute", "Relative"), each = v * 3)
+    ) |>
+    tidyr::separate(col = term, into = c("term", "score"), sep = "__") |>
+    dplyr::relocate(score, .before = 1) |>
+    dplyr::arrange(score, error, raters)
+
+  if (v == 1) {
+    colnames(iccs) <- icc_names
+  }
 
   varde_icc(
     iccs_summary = iccs_summary,

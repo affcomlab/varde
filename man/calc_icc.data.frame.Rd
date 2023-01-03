@@ -8,16 +8,13 @@
   .data,
   subject = "subject",
   rater = "rater",
-  score = "score",
+  scores = c("score1", "score2"),
   k = NULL,
   method = ggdist::mode_qi,
   ci = 0.95,
   chains = 4,
   cores = 4,
   iter = 5000,
-  subject_label = "Subject",
-  rater_label = "Rater",
-  residual_label = "Residual",
   ...
 )
 }
@@ -33,10 +30,10 @@ person, image, or document). (default = \code{"subject"})}
 identifier for the rater or thing providing the score in each row (e.g.,
 rater, judge, or instrument). (default = \code{"rater"})}
 
-\item{score}{A string indicating the column name in \code{.data} that contains the
-numerical score representing the rating of each row's subject from that
-same row's rater (e.g., score, rating, judgment, measurement). (default =
-\code{"score"})}
+\item{scores}{A character vector indicating the column names in \code{.data} that
+contain the numerical scores representing the rating of each row's subject
+from that same row's rater (e.g., score, rating, judgment, measurement).
+(default = \code{c("score1", "score2")})}
 
 \item{k}{Either \code{NULL} to set the number of raters you would like to estimate
 the reliability of to the total number of unique raters observed in \code{.data}
@@ -61,6 +58,8 @@ executing the chains in parallel. Forwarded on to \code{\link[brms:brm]{brms::br
 \item{iter}{An integer representing the total number of interations per chain
 (including warmup). Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default = \code{5000})}
 
+\item{...}{Further arguments passed to \code{\link[brms:brm]{brms::brm()}}.}
+
 \item{subject_label}{A string that controls what subjects are called in the
 returned output objects and any subsequent plots. (default = \code{"Subject"})}
 
@@ -69,8 +68,6 @@ returned output objects and any subsequent plots. (default = \code{"Rater"})}
 
 \item{residual_label}{A string that controls what residuals are called in the
 returned output objects and any subsequent plots. (default = \code{"Residual"})}
-
-\item{...}{Further arguments passed to \code{\link[brms:brm]{brms::brm()}}.}
 }
 \value{
 A list object of class "varde_icc" that includes three main elements:
