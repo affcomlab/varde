@@ -48,16 +48,13 @@ create_srm <- function(.data,
 calc_icc <- function(.data,
                      subject = "subject",
                      rater = "rater",
-                     score = "score",
+                     scores = c("score1", "score2"),
                      k = NULL,
                      method = ggdist::mode_qi,
                      ci = 0.95,
                      chains = 4,
                      cores = 4,
                      iter = 5000,
-                     subject_label = "Subject",
-                     rater_label = "Rater",
-                     residual_label = "Residual",
                      ...) {
   UseMethod("calc_icc")
 }

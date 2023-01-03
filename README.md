@@ -161,8 +161,9 @@ plot(res_2)
 plot(res_2, parameters = c("ICC(A,k)", "ICC(C,k)"))
 ```
 
-<img src="man/figures/README-p2b-1.png" width="100%" /> \## Multivariate
-MCMC for ICC
+<img src="man/figures/README-p2b-1.png" width="100%" />
+
+### Multivariate MCMC for Many ICCs
 
 In `posneg`, 110 images were rated by between 2 and 5 raters on how
 “Negative” and “Positive” they appeared.
