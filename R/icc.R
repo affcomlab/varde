@@ -177,6 +177,7 @@ calc_icc.data.frame <- function(.data,
   # Construct mixed-effects formula
   twoway <- is_twoway(.data, subject, rater)
   # TODO: Check that is_twoway() works correctly for mv models
+  # TODO: Check that everything works when scores contain weird characters
   if (twoway && v == 1) {
     formula <- brms::bf(paste0(
       scores, ' ~ 1 + (1 | ', subject, ') + (1 | ', rater, ')'
