@@ -13,7 +13,6 @@
   method = ggdist::mode_qi,
   ci = 0.95,
   chains = 4,
-  cores = 4,
   iter = 5000,
   ...
 )
@@ -50,10 +49,6 @@ credible intervals to estimate (e.g., 0.95 = 95\% CI). (default = \code{0.95})}
 
 \item{chains}{An integer representing the number of Markov chains to use in
 estimation. Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default = \code{4})}
-
-\item{cores}{An integer representing the number of cores to use when
-executing the chains in parallel. Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default =
-\code{4})}
 
 \item{iter}{An integer representing the total number of interations per chain
 (including warmup). Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default = \code{5000})}

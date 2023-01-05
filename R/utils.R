@@ -75,3 +75,7 @@ get_estimates <- function(m, method = ggdist::mode_qi, ci = 0.95) {
   apply(X = m, MARGIN = 2, FUN = method, .width = ci) |>
     dplyr::bind_rows(.id = "term")
 }
+
+bname <- function(x) {
+  gsub(pattern = "_", replacement = "", x)
+}

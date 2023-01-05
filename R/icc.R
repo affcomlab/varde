@@ -53,7 +53,6 @@ calc_icc <- function(.data,
                      method = ggdist::mode_qi,
                      ci = 0.95,
                      chains = 4,
-                     cores = 4,
                      iter = 5000,
                      ...) {
   UseMethod("calc_icc")
@@ -88,9 +87,6 @@ calc_icc <- function(.data,
 #'   credible intervals to estimate (e.g., 0.95 = 95% CI). (default = `0.95`)
 #' @param chains An integer representing the number of Markov chains to use in
 #'   estimation. Forwarded on to [brms::brm()]. (default = `4`)
-#' @param cores An integer representing the number of cores to use when
-#'   executing the chains in parallel. Forwarded on to [brms::brm()]. (default =
-#'   `4`)
 #' @param iter An integer representing the total number of interations per chain
 #'   (including warmup). Forwarded on to [brms::brm()]. (default = `5000`)
 #' @param subject_label A string that controls what subjects are called in the
@@ -126,7 +122,6 @@ calc_icc.data.frame <- function(.data,
                                 method = ggdist::mode_qi,
                                 ci = 0.95,
                                 chains = 4,
-                                cores = 4,
                                 iter = 5000,
                                 ...) {
 
@@ -205,7 +200,6 @@ calc_icc.data.frame <- function(.data,
     formula = formula,
     data = .data,
     chains = chains,
-    cores = cores,
     iter = iter,
     init = "random",
     ...
@@ -216,13 +210,13 @@ calc_icc.data.frame <- function(.data,
 
   # Extract posterior draws as matrices
   if (v > 1) {
-    vs <-  res$vars_posterior[, paste(subject, scores, sep = "__")]
+    vs <-  res$vars_posterior[, paste(subject, bname(scores), sep = "__")]
     if (twoway) {
-      vr <- res$vars_posterior[, paste(rater, scores, sep = "__")]
+      vr <- res$vars_posterior[, paste(rater, bname(scores), sep = "__")]
     } else {
       vr <- rep(NA_real_, length(vs))
     }
-    vsr <- res$vars_posterior[, paste("Residual", scores, sep = "__")]
+    vsr <- res$vars_posterior[, paste("Residual", bname(scores), sep = "__")]
   } else {
     vs <-  res$vars_posterior[, subject]
     if (twoway) {
