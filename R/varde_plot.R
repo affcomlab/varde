@@ -118,11 +118,19 @@ plot.varde_res <- function(x,
           ggplot2::aes(
             x = estimate,
             y = 1,
-            #text = paste0(component, ": ", id, "\nEstimate: ", round(estimate, 3))
+            text = paste0(
+              component,
+              ": ",
+              id,
+              "\nEstimate: ",
+              round(estimate, 3)
+            )
           )
         ) +
         ggplot2::facet_wrap(~component, scales = "free") +
-        ggplot2::geom_jitter(width = 0) +
+        ggplot2::geom_point(
+          position = ggbeeswarm::position_quasirandom(dodge.width = NULL)
+        ) +
         ggplot2::scale_x_continuous() +
         ggplot2::scale_y_discrete() +
         ggplot2::labs(x = "Estimated Intercept", y = NULL) +

@@ -1,0 +1,39 @@
+Fully Crossed:
+Each rater scores each subject who, in turn, is scored within each cluster
+
+Y_scr = mu + mu_s + mu_c + mu_r + mu_sc + mu_sr + mu_cr + mu_scr
+
+---
+
+Design 1:
+Raters Crossed with Clusters
+Each subject belongs to a specific cluster
+
+Y_(s:c)r = mu + mu_c + mu_s:c + mu_r + mu_cr + mu_(s:c)r
+
+ICC_s(A,k) = v_s:c / (v_s:c + (v_r + v_(s:c)r) / k)
+ICC_s(C,k) = v_s:c / (v_s:c + v_(s:c)r / k)
+
+ICC_c(A,k) = v_c / (v_c + (v_r + v_cr) / k)
+ICC_c(C,k) = v_c / (v_c + v_cr / k)
+
+---
+
+Design 2:
+Raters Nested Within Clusters
+Each rater only rates subjects from a single cluster
+
+Y_(sr):c = mu + mu_c + mu_s:c + mu_r:c + mu_(sr):c
+
+ICC_s(A,k) = v_s:c / (v_s:c + (v_r:c + v_(sr):c) / k)
+ICC_s(C,k) = v_s:c / (v_s:c + v_(sr):c / k)
+
+---
+
+Design 3:
+Raters Nested Within Subjects and Clusters
+Each rater only rates a single subject from a single cluster, raters are nested within subjects who are themselves nested within clusters
+
+Y_r:s:c = mu + mu_c + mu_s:c + mu_r:s:c
+
+ICC_s(k) = v_s:c / (v_s:c + v_r:s:c / k)

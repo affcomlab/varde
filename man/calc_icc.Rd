@@ -18,8 +18,8 @@ calc_icc(
 )
 }
 \arguments{
-\item{.data}{A data frame containing at least the variables identified in
-\code{subject}, \code{rater}, and \code{score}.}
+\item{.data}{Either a data frame containing at least the variables identified
+in \code{subject}, \code{rater}, and \code{score} or a brmsfit object.}
 
 \item{subject}{A string indicating the column name in \code{.data} that contains
 an identifier for the subject or thing being scored in each row (e.g.,
