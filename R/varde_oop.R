@@ -6,19 +6,19 @@ varde <- function(model, ...) {
 
 # S3 Constructor
 #' @exportClass verde_res
-new_varde_res <- function(vars_summary = tibble(),
-                          ints_summary = tibble(),
+new_varde_res <- function(vars_summary = data.frame(),
+                          ints_summary = data.frame(),
                           vars_posterior = matrix(),
                           ints_posterior = matrix(),
                           config = list(),
                           model = list()) {
 
-  stopifnot(tibble::is_tibble(vars_summary))
-  stopifnot(tibble::is_tibble(ints_summary))
+  stopifnot(is.data.frame(vars_summary))
+  stopifnot(is.data.frame(ints_summary))
   stopifnot(is.matrix(vars_posterior))
   stopifnot(is.matrix(ints_posterior))
   stopifnot(is.list(config))
-  stopifnot(is.list(model), inherits(model, "brmsfit"))
+  stopifnot(inherits(model, "brmsfit") || inherits(model, "lmerMod"))
 
   structure(
     list(
@@ -34,8 +34,8 @@ new_varde_res <- function(vars_summary = tibble(),
 }
 
 # S3 Helper
-varde_res <- function(vars_summary = tibble(),
-                      ints_summary = tibble(),
+varde_res <- function(vars_summary = data.frame(),
+                      ints_summary = data.frame(),
                       vars_posterior = matrix(),
                       ints_posterior = matrix(),
                       config = list(),
@@ -55,7 +55,7 @@ varde_res <- function(vars_summary = tibble(),
 print.varde_res <- function(x, intercepts = TRUE, ...) {
   cat(crayon::blue("# Variance Estimates\n"))
   print(x$vars_summary, ...)
-  if (intercepts) {
+  if (intercepts && length(x$ints_summary) > 0) {
     cat(crayon::blue("\n# Intercept Estimates\n"))
     print(x$ints_summary, ...)
   }

@@ -36,7 +36,7 @@ varde.brmsfit <- function(model,
 
   # Construct variances summary tibble
   vars_summary <-
-    tibble(
+    data.frame(
       component = colnames(vars),
       term = "Variance",
       estimate = vars_estimates$y,
@@ -46,6 +46,7 @@ varde.brmsfit <- function(model,
     )
 
   if (is_mv) {
+    ## TODO: Replace with base R code
     vars_summary <-
       tidyr::separate(
         vars_summary,
@@ -53,9 +54,7 @@ varde.brmsfit <- function(model,
         into = c("component", "score"),
         sep = "\\_\\_"
       ) |>
-      dplyr::group_by(score) |>
-      dplyr::mutate(percent = estimate / sum(estimate)) |>
-      dplyr::ungroup() |>
+      dplyr::mutate(percent = estimate / sum(estimate), .by = score) |>
       dplyr::arrange(score, component) |>
       dplyr::relocate(score, .before = 1)
   }
@@ -76,7 +75,7 @@ varde.brmsfit <- function(model,
   # Construct random intercepts summary tibble
   ints_estimates <- get_estimates(ints, method = method, ci = ci)
   ints_summary <-
-    tibble(
+    data.frame(
       component = colnames(ints),
       term = "Intercept",
       estimate = ints_estimates$y,
@@ -112,6 +111,32 @@ varde.brmsfit <- function(model,
     ints_summary = ints_summary,
     ints_posterior = ints,
     config = list(method = method, ci = ci),
+    model = model
+  )
+}
+
+#' @method varde lmerMod
+#' @export
+varde.lmerMod <- function(model, ...) {
+
+  assertthat::assert_that(check_convergence(model) == TRUE)
+
+  vc <- as.data.frame(lme4::VarCorr(model))
+
+  # Construct variances summary tibble
+  vars_summary <-
+    data.frame(
+      component = vc$grp,
+      term = "Variance",
+      estimate = vc$vcov,
+      percent = vc$vcov / sum(vc$vcov)
+    )
+
+  varde_res(
+    vars_summary = vars_summary,
+    vars_posterior = matrix(),
+    ints_summary = get_lmer_ints(model),
+    ints_posterior = matrix(),
     model = model
   )
 }

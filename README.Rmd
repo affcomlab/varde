@@ -40,6 +40,17 @@ ppa_type1 <- ppa[ppa$Type == 1, ]
 ```
 
 
+### Simple Frequentist G Study
+
+```{r}
+fit_0 <- lme4::lmer(
+  formula = Sepal.Length ~ 1 + (1 | Species),
+  data = iris
+)
+varde(fit_0)
+```
+
+
 ### Simple Generalizability Study
 
 ```{r res_1, message=FALSE}
