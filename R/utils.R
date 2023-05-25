@@ -92,7 +92,7 @@ get_lmer_ints <- function(m) {
   l2 <- lapply(l, \(x) datawizard::rownames_as_column(x, var = "id"))
   d <- Reduce(rbind, l2)
   out <- data.frame(
-    component = rep(names(l), each = nrow(d) / length(l)),
+    component = rep(names(l), times = sapply(l2, nrow)),
     term = rep("Intercept", times = nrow(d)),
     id = d$id,
     estimate = d$`(Intercept)`,
