@@ -126,6 +126,7 @@ res_3 <- calc_icc(
   rater = "Rater",
   scores = c("Negative", "Positive"),
   file = "m3",
+  cores = 4,
   control = list(adapt_delta = 0.999)
 )
 res_3

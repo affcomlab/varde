@@ -103,6 +103,7 @@ calc_icc <- function(.data,
                      iter = 5000,
                      file = NULL,
                      ...) {
+
   assertthat::assert_that(
     rlang::is_null(k) || rlang::is_integerish(k, n = 1)
   )
@@ -115,9 +116,17 @@ calc_icc <- function(.data,
     chains >= 1
   )
 
-  if (!is.null(file) && file.exists(file)) {
-    out <- readRDS(file)
-    return(out)
+  if (!is.null(file)) {
+    # Add rds extension if needed
+    if (tools::file_ext(file) != "rds") {
+      file <- paste0(file, ".rds")
+    }
+    # If already exists, read it in
+    if (file.exists(file)) {
+      message("Reading results from file")
+      out <- readRDS(file)
+      return(out)
+    }
   }
 
   # How many score variables were provided?
@@ -260,7 +269,7 @@ calc_icc <- function(.data,
   iccs_estimates <- get_estimates(iccs, method = method, ci = ci)
 
   iccs_summary <-
-    tibble(
+    data.frame(
       term = colnames(iccs),
       estimate = iccs_estimates$y,
       lower = iccs_estimates$ymin,

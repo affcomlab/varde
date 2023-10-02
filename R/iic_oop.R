@@ -8,18 +8,18 @@ new_srm <- function(x, ...) {
   structure(x, ..., class = "varde_srm")
 }
 
-new_icc <- function(iccs_summary = tibble::tibble(),
-                    vars_summary = tibble::tibble(),
-                    ints_summary = tibble::tibble(),
+new_icc <- function(iccs_summary = data.frame(),
+                    vars_summary = data.frame(),
+                    ints_summary = data.frame(),
                     iccs_posterior = matrix(),
                     vars_posterior = matrix(),
                     ints_posterior = matrix(),
                     config = list(),
                     model = list()) {
 
-  stopifnot(tibble::is_tibble(iccs_summary))
-  stopifnot(tibble::is_tibble(vars_summary))
-  stopifnot(tibble::is_tibble(ints_summary))
+  stopifnot(is.data.frame(iccs_summary))
+  stopifnot(is.data.frame(vars_summary))
+  stopifnot(is.data.frame(ints_summary))
   stopifnot(is.matrix(iccs_posterior))
   stopifnot(is.matrix(vars_posterior))
   stopifnot(is.matrix(ints_posterior))
@@ -42,9 +42,9 @@ new_icc <- function(iccs_summary = tibble::tibble(),
 }
 
 # S3 Helper
-varde_icc <- function(iccs_summary = tibble::tibble(),
-                      vars_summary = tibble::tibble(),
-                      ints_summary = tibble::tibble(),
+varde_icc <- function(iccs_summary = data.frame(),
+                      vars_summary = data.frame(),
+                      ints_summary = data.frame(),
                       iccs_posterior = matrix(),
                       vars_posterior = matrix(),
                       ints_posterior = matrix(),
