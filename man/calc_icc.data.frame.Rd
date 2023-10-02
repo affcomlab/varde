@@ -14,6 +14,7 @@
   ci = 0.95,
   chains = 4,
   iter = 5000,
+  file = NULL,
   ...
 )
 }
@@ -53,16 +54,11 @@ estimation. Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default = \cod
 \item{iter}{An integer representing the total number of interations per chain
 (including warmup). Forwarded on to \code{\link[brms:brm]{brms::brm()}}. (default = \code{5000})}
 
+\item{file}{Either \code{NULL} to ignore or a string representing the filename to
+save the results to. If a file with that name already exists, the results
+will instead be read from that file. (default = \code{NULL})}
+
 \item{...}{Further arguments passed to \code{\link[brms:brm]{brms::brm()}}.}
-
-\item{subject_label}{A string that controls what subjects are called in the
-returned output objects and any subsequent plots. (default = \code{"Subject"})}
-
-\item{rater_label}{A string that controls what raters are called in the
-returned output objects and any subsequent plots. (default = \code{"Rater"})}
-
-\item{residual_label}{A string that controls what residuals are called in the
-returned output objects and any subsequent plots. (default = \code{"Residual"})}
 }
 \value{
 A list object of class "varde_icc" that includes three main elements:

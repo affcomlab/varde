@@ -89,12 +89,9 @@ calc_icc <- function(.data,
 #'   estimation. Forwarded on to [brms::brm()]. (default = `4`)
 #' @param iter An integer representing the total number of interations per chain
 #'   (including warmup). Forwarded on to [brms::brm()]. (default = `5000`)
-#' @param subject_label A string that controls what subjects are called in the
-#'   returned output objects and any subsequent plots. (default = `"Subject"`)
-#' @param rater_label A string that controls what raters are called in the
-#'   returned output objects and any subsequent plots. (default = `"Rater"`)
-#' @param residual_label A string that controls what residuals are called in the
-#'   returned output objects and any subsequent plots. (default = `"Residual"`)
+#' @param file Either `NULL` to ignore or a string representing the filename to
+#'   save the results to. If a file with that name already exists, the results
+#'   will instead be read from that file. (default = `NULL`)
 #' @param ... Further arguments passed to [brms::brm()].
 #' @return A list object of class "varde_icc" that includes three main elements:
 #' * `$iccs_summary`: A [tibble::tibble()] containing summary information about
@@ -123,6 +120,7 @@ calc_icc.data.frame <- function(.data,
                                 ci = 0.95,
                                 chains = 4,
                                 iter = 5000,
+                                file = NULL,
                                 ...) {
 
   assertthat::assert_that(
@@ -136,6 +134,11 @@ calc_icc.data.frame <- function(.data,
     rlang::is_integerish(chains, n = 1, finite = TRUE),
     chains >= 1
   )
+
+  if (!is.null(file) && file.exists(file)) {
+    out <- readRDS(file)
+    return(out)
+  }
 
   # How many score variables were provided?
   v <- length(scores)
@@ -287,17 +290,23 @@ calc_icc.data.frame <- function(.data,
     colnames(iccs) <- icc_names
   }
 
-  varde_icc(
-    iccs_summary = iccs_summary,
-    vars_summary = res$vars_summary,
-    ints_summary = res$ints_summary,
-    iccs_posterior = iccs,
-    vars_posterior = res$vars_posterior,
-    ints_posterior = res$ints_posterior,
-    config = list(method = method, ci = ci, k = k),
-    model = fit
-  )
+  out <-
+    varde_icc(
+      iccs_summary = iccs_summary,
+      vars_summary = res$vars_summary,
+      ints_summary = res$ints_summary,
+      iccs_posterior = iccs,
+      vars_posterior = res$vars_posterior,
+      ints_posterior = res$ints_posterior,
+      config = list(method = method, ci = ci, k = k),
+      model = fit
+    )
 
+  if (!is.null(file)) {
+    try(saveRDS(out, file = file), silent = FALSE)
+  }
+
+  out
 }
 
 
