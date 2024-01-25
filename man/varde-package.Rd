@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Jeffrey Girard \email{me@jmgirard.com}
 
+Authors:
+\itemize{
+  \item Aaron Matthew Simmons \email{amsimmons@ku.edu}
+}
+
 }
 \keyword{internal}

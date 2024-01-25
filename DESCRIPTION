@@ -1,9 +1,10 @@
 Type: Package
 Package: varde
 Title: Variance Decomposition Functions
-Version: 0.0.1
-Authors@R: 
-    person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre"))
+Version: 0.0.3
+Authors@R: c(
+    person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre")),
+    person("Aaron Matthew", "Simmons",,"amsimmons@ku.edu",role=c("aut")))
 Description: Functions for doing variance decomposition, e.g., for
     conducting generalizability studies or estimating intraclass correlations.
 License: MIT + file LICENSE
@@ -33,6 +34,6 @@ Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Depends: 
     R (>= 2.10)

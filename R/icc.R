@@ -303,3 +303,67 @@ calc_icc <- function(.data,
 
   out
 }
+
+# computeICC_random() --------------------------------------------------------------
+
+#' Calculate random effects LME variances into ICC - BETA VERSION
+#'
+#' Given a random LME model from LME4, first identify the model, then calculate ICC from variances
+#'
+#' @param model_fit The model object from a lme4.
+#' @param subjects The specific variable designated as the raters for ICC calculation.
+#' @return A vector of ICCs from the specified lme4 model
+#' @export
+computeICC_random <- function(lme_model, subjects = "subjects"){
+
+  ran_eff <- attr(lme_model@flist,"names")
+
+
+  if (length(ran_eff) > 1) {
+    #two way random effects
+    lme_vars <- lme4::VarCorr(lme_model)
+    obj_eff_var <- lme_vars[[subjects]][1] #obtain object name
+
+    #get not specified random effects variances
+    ran_eff <- ran_eff[ran_eff != subjects]
+    other_vars <- lme_vars[[ran_eff]][1]
+
+    #residual
+    res_err <- (attr(lme4::VarCorr(lme_model), "sc"))^2
+
+    # If more than 2 random effects?
+    # for (i in 1:length(ran_eff)) {
+    #   other_vars[i]<- lme_vars[[ran_eff[i]]]
+    # }
+    #
+
+    # number of levels
+    n_subs <- nlevels(lme_model@flist[subjects][[subjects]])
+    n_other <- nlevels(lme_model@flist[ran_eff][[ran_eff]])
+
+    # single score
+    ICC_A1 <- obj_eff_var / (obj_eff_var + other_vars + res_err) #absolute
+    ICC_C1 <-  obj_eff_var / (obj_eff_var + res_err) #consistency
+
+
+    #average score
+    ICC_AK <- obj_eff_var / (obj_eff_var + (other_vars+res_err)/n_other) #absolute
+    ICC_CK <- obj_eff_var / (obj_eff_var + (res_err)/n_other) #consistency
+
+    #ICC <- tibble(ICC_A1 = c(ICC_A1), ICC_AK = c(ICC_AK), ICC_C1 = c(ICC_C1),ICC_CK = c(ICC_CK))
+    ICC <- cbind(ICC_A1,ICC_AK,ICC_C1,ICC_CK)
+  }  else {
+    #one way random effects models
+    obj_eff <- lme4::VarCorr(lme_model)[[subjects]][1] #obtain ICC for object
+    res_err <- (attr(VarCorr(lme_model), "sc"))^2
+
+    ICC_C1 <-  obj_eff / (res_err + obj_eff)
+
+    ICC <- tibble(ICC_C1 = c(ICC_C1))
+  }
+
+  return(ICC)
+
+
+}
+
