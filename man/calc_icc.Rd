@@ -11,6 +11,7 @@ calc_icc(
   scores = c("score1", "score2"),
   k = NULL,
   method = ggdist::mode_qi,
+  engine = "BRMS",
   ci = 0.95,
   chains = 4,
   iter = 5000,
@@ -44,6 +45,9 @@ the reliability of (see details below). (default = \code{NULL})}
 returns a data frame containing a point estimate (\code{y}) and the lower
 (\code{ymin}) and upper (\code{ymax}) bounds of an interval estimate. (default =
 \code{\link[ggdist:point_interval]{ggdist::mode_qi()}})}
+
+\item{engine}{A character vector indicating the choice of estimation
+framework (\code{"ANOVA"}, \code{"LME"}, or \code{"BRMS"}). (default = "\code{"BRMS"})}
 
 \item{ci}{A finite number between 0 and 1 that represents the width of the
 credible intervals to estimate (e.g., 0.95 = 95\% CI). (default = \code{0.95})}

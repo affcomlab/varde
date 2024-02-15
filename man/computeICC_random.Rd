@@ -4,12 +4,12 @@
 \alias{computeICC_random}
 \title{Calculate random effects LME variances into ICC - BETA VERSION}
 \usage{
-computeICC_random(lme_model, subjects = "subjects")
+computeICC_random(model_fit, subjects = "subjects", k, khat, q)
 }
 \arguments{
-\item{subjects}{The specific variable designated as the raters for ICC calculation.}
-
 \item{model_fit}{The model object from a lme4.}
+
+\item{subjects}{The specific variable designated as the raters for ICC calculation.}
 }
 \value{
 A vector of ICCs from the specified lme4 model

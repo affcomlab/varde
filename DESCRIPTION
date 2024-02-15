@@ -1,7 +1,7 @@
 Type: Package
 Package: varde
 Title: Variance Decomposition Functions
-Version: 0.0.3
+Version: 0.0.1.2
 Authors@R: c(
     person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre")),
     person("Aaron Matthew", "Simmons",,"amsimmons@ku.edu",role=c("aut")))
