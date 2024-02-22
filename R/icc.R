@@ -197,64 +197,51 @@ calc_icc <- function(.data,
   names(srm) <- scores
 
   # Count the number of raters who scored each subject
-  #ks <- lapply(X = srm, FUN = rowSums)
+  ks <- lapply(X = srm, FUN = rowSums)
 
   # Count the number of subjects scored by each rater
-  #nk <- lapply(X = srm, FUN = colSums)
+  nk <- lapply(X = srm, FUN = colSums)
+
+   ### ADD WARNINGS WHEN DATA IS TRIMMED? ####
 
   # # Remove all subjects that had no raters
-  # keep <- lapply(ks, function(x) names(x[x > 0])) |>
-  #   unlist() |>
-  #   unique()
-  # .data <- .data[.data[[subject]] %in% keep, ]
-  #
+  keep <- lapply(ks, function(x) names(x[x > 0])) |>
+    unlist() |>
+    unique()
+  .data <- .data[.data[[subject]] %in% keep, ]
+
   # # Remove all raters that had no subjects
-  # keep <- lapply(nk, function(x) names(x[x > 0])) |>
-  #   unlist() |>
-  #   unique()
-  # .data <- .data[.data[[rater]] %in% keep, ]
+  keep <- lapply(nk, function(x) names(x[x > 0])) |>
+    unlist() |>
+    unique()
+  .data <- .data[.data[[rater]] %in% keep, ]
 
   ## Check type of design
   # Balanced or unbalanced
+  # Recall:
+  #two-way complete/incomplete and/or balanced/unbalanced designs
+  #one-way is special case of incomplete two-way design (balanced no overlap)
 
   balanced <- is_balanced(.data, subject,rater)
   complete <- is_complete(.data, subject,rater)
   twoway <- is_twoway(.data, subject, rater)
 
 
-  khat <- NULL #harmonic mean of raters (usually in incomplete designs)
-  Q <- NULL #proportion of nonoverlap across raters
-
-  if(is.null(khat) | is.null(Q)){
-    ## Decide on values for khat and q
-    if(balanced == TRUE & complete == TRUE){
-      khat <- k
-      Q <- 0
-    } else {
-      if(balanced == TRUE & complete == FALSE){
-        khat <- unique(rowSums(table(.data[[subject]], by = .data[[rater]])))
-        Q <- computeQkhat(.data, subjects = subject, raters = rater)$Q
-      } else {
-        if(balanced == FALSE & complete == FALSE){
-          Qkhat <- computeQkhat(.data, subjects = subject, raters = rater)
-          khat <- Qkhat$khat
-          Q <- Qkhat$Q
-        } else {
-          if(twoWay == FALSE){
-            khat <- computeKhat(data, subjects = subjects, raters = raters)
-            Q <- 1/k # But not needed, since sigmaR cannot be distinguished
-          }
-        }
-      }
-    }
-  }
-
-
-
   # If not specified, set k as the number of unique raters
   if (is.null(k)) {
     k <- length(unique(.data[[rater]]))
   }
+
+  # Calculate the harmonic mean of the number of raters per subject
+  khat <- lapply(srm, calc_khat)
+
+  # Calculate the proportion of non-overlap for raters and subjects
+  q <- lapply(srm, calc_q)
+
+  if(twoway == FALSE){
+      q <- 1/k #since sigmaR cannot be distinguished
+    }
+
 
   #Branch engine cases
 
@@ -286,12 +273,22 @@ calc_icc <- function(.data,
              stop("Model did not converge")
            } else {
 
-             iccs_estimates <- computeICC_random(fit, subject, k, khat, Q)
+             icc_estimates <- computeICC_random(fit, subject, k, khat, q, v)
 
              #obtain confidence intervals of ICCs
-             iccs_CIs <- CIs_LME(fit, subject, rater, ci, k, khat, Q)
+             iccs_CIs <- CIs_LME(fit, subject, rater, ci, k, khat, q)
 
              #need to take simulated CIs but estimated ICCs
+             iccs_CIs$est <- t(icc_estimates)
+             icc_names <- c(
+               "ICC(A,1)", "ICC(A,khat)", "ICC(A,k)",
+               "ICC(C,1)", "ICC(Q,khat)", "ICC(C,k)"
+             )
+
+             rownames(iccs_CIs) <-icc_names
+
+
+
 
            }
          },
@@ -336,11 +333,11 @@ calc_icc <- function(.data,
            colnames(vr) <- scores
            colnames(vsr) <- scores
 
-           # Calculate the harmonic mean of the number of raters per subject
-           khat <- lapply(srm, calc_khat)
-
-           # Calculate the proportion of non-overlap for raters and subjects
-           q <- lapply(srm, calc_q)
+           # # Calculate the harmonic mean of the number of raters per subject
+           # khat <- lapply(srm, calc_khat)
+           #
+           # # Calculate the proportion of non-overlap for raters and subjects
+           # q <- lapply(srm, calc_q)
 
            # Make matrices for k, khat, and q
            kmat <- matrix(rep(k, times = v * nrow(vs)), ncol = v, byrow = TRUE)
@@ -349,6 +346,7 @@ calc_icc <- function(.data,
              ncol = v,
              byrow = TRUE
            )
+
            qmat <- matrix(
              rep(unlist(q), times = nrow(vs)),
              ncol = v,
@@ -442,7 +440,7 @@ computeICC_aov <- function(model_fit, subjects = "subjects"){
 #' @param subjects The specific variable designated as the raters for ICC calculation.
 #' @return A vector of ICCs from the specified lme4 model
 #' @export
-computeICC_random <- function(model_fit, subjects = "subjects", k, khat, q){
+computeICC_random <- function(model_fit, subjects = "subjects", k, khat, q, v){
 
 
   ran_eff <- attr(model_fit@flist,"names")
@@ -451,39 +449,50 @@ computeICC_random <- function(model_fit, subjects = "subjects", k, khat, q){
   if (length(ran_eff) > 1) {
     #two way random effects
     lme_vars <- lme4::VarCorr(model_fit)
-    obj_eff_var <- lme_vars[[subjects]][1] #obtain object name
+    vs <- lme_vars[[subjects]][1] #obtain object name
 
     #get not specified random effects variances
     ran_eff <- ran_eff[ran_eff != subjects]
-    other_vars <- lme_vars[[ran_eff]][1]
+    vr <- lme_vars[[ran_eff]][1]
 
-    #residual
-    res_err <- (attr(lme4::VarCorr(model_fit), "sc"))^2
+    #residual (residual + interactions)
+    vsr <- (attr(lme4::VarCorr(model_fit), "sc"))^2
 
-    # If more than 2 random effects?
-    # for (i in 1:length(ran_eff)) {
-    #   other_vars[i]<- lme_vars[[ran_eff[i]]]
-    # }
-    #
+    #create ICCs with multiple scores
+    kmat <- matrix(rep(k, times = v * nrow(table(vs))), ncol = v, byrow = TRUE)
+    khatmat <- matrix(
+      rep(unlist(khat), times = nrow(table(vs))),
+      ncol = v,
+      byrow = TRUE
+    )
 
-    # number of levels
-    n_subs <- nlevels(model_fit@flist[subjects][[subjects]])
-    n_other <- nlevels(model_fit@flist[ran_eff][[ran_eff]])
+    qmat <- matrix(
+      rep(unlist(q), times = nrow(table (vs))),
+      ncol = v,
+      byrow = TRUE
+    )
 
-    # single score
-    ICC_A1 <- obj_eff_var / (obj_eff_var + other_vars + res_err) #absolute
-    ICC_Akhat <- obj_eff_var / (obj_eff_var + (other_vars + res_err)/khat) #absolutekhat
-    ICC_C1 <-  obj_eff_var / (obj_eff_var + res_err) #consistency
+    ICC <- cbind(
+      vs / (vs + vr + vsr), #ICC_A1 absolute (single score)
+      vs / (vs + (vr + vsr) / khatmat), #ICC_Akhat absolute (average, using full K)
+      vs / (vs + (vr + vsr) / kmat), #ICC_AK (average, using desired k)
+      vs / (vs + vsr), #ICC_C1 consistency (single score)
+      vs / (vs + qmat * vr + vsr / khatmat), #ICC_Qkhat (average, using full k)
+      vs / (vs + vsr / kmat) # ICC_CK (average, using desired k)
+    )
 
+    icc_names <- c(
+      "ICC(A,1)", "ICC(A,khat)", "ICC(A,k)",
+      "ICC(C,1)", "ICC(Q,khat)", "ICC(C,k)"
+    )
 
-    #average score
-    Q <- 0 #for balanced and complete designs
-    ICC_AK <- obj_eff_var / (obj_eff_var + (other_vars+res_err)/n_other) #absolute
-    ICC_CKhat <- obj_eff_var / (obj_eff_var + Q*other_vars + res_err/khat) #consistency avgkhat
-    ICC_CK <- obj_eff_var / (obj_eff_var + (res_err)/n_other) #consistency
+    colnames(ICC) <- paste(
+      rep(icc_names, each = v),
+      colnames(ICC),
+      sep = "__"
+    )
 
-    #ICC <- tibble(ICC_A1 = c(ICC_A1), ICC_AK = c(ICC_AK), ICC_C1 = c(ICC_C1),ICC_CK = c(ICC_CK))
-    ICC <- cbind(ICC_A1,ICC_Akhat,ICC_AK,ICC_C1,ICC_CKhat,ICC_CK)
+    return (ICC)
 
 
   }  else {
@@ -504,47 +513,6 @@ computeICC_random <- function(model_fit, subjects = "subjects", k, khat, q){
 
 
 
-############################################################################
-## FUNCTIONS TO COMPUTE KHAT AND Q (ten Hove et al, 2022)
-############################################################################
-## Function to compute khat and Q from obs. design
-computeQkhat <- function(data, subjects = "subjects", raters = "raters"){
-  k <- length(unique(data[[raters]]))
-  share <- 0 # Proportion shared raters
-
-  RR <- data[[raters]]
-  SS <- data[[subjects]]
-  tabRxS <- table(RR, SS)
-  uSub <- ncol(tabRxS) # Number of unique subjects
-  khat <- uSub/ sum(1/colSums(tabRxS)) # harmonic mean number of raters per subject
-  for(i in 1:uSub){
-    k_s <- colSums(tabRxS)[i]
-
-    for(j in (1:uSub)[-i]){
-      k_sprime <- colSums(tabRxS)[j]
-      k_s.sprime <- sum(RR[SS == i] %in% RR[SS == j])
-      share <- share + (k_s.sprime / (k_s*k_sprime))/(uSub * (uSub-1))
-    }
-  }
-  Q <- round(1/khat - share, 3)
-  names(Q) <- "Q"
-
-  return(list(Q = Q, khat = khat))
-}
-
-## Function to compute only khat (saves time when Q is not needed)
-computeKhat <- function(data, subjects = "subjects", raters = "raters"){
-  k <- length(unique(data[[raters]]))
-  share <- 0 # Proportion shared raters
-
-  RR <- data[[raters]]
-  SS <- data[[subjects]]
-  tabRxS <- table(RR, SS)
-  uSub <- ncol(tabRxS) # Number of unique subjects
-  khat <- uSub/ sum(1/colSums(tabRxS)) # harmonic mean number of raters per subject
-
-  return(khat)
-}
 
 ############################################################################
 ## FUNCTIONS TO COMPUTE SIMULATE LME CIs (ten Hove et al, 2022)
@@ -552,6 +520,8 @@ computeKhat <- function(data, subjects = "subjects", raters = "raters"){
 
 CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k, khat, Q){
   level <- ci
+  khat <- khat$Score
+  Q <- Q$Score
   #two way random effects
   lme_vars <- lme4::VarCorr(model_fit)
   S_s <- lme_vars[[subjects]][1] #obtain object name
@@ -564,13 +534,11 @@ CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k,
   #residual/interaction variances
   S_sr <- (attr(lme4::VarCorr(model_fit), "sc"))^2
 
-
-
   ## List all (and create SDs)
   sigmas <- c(S_s = S_s, S_r = S_r, S_sr = S_sr)
   # ICCs <- c(ICCa1 = ICCa1, ICCak = ICCak, ICCakhat = ICCakhat,
   #           ICCc1 = ICCc1, ICCck = ICCck, ICCqkhat = ICCqkhat)
-  #
+
   ## Asymptotic vcov matrix of sigmas
   suppressWarnings(ACOV <- merDeriv::vcov.lmerMod(model_fit, full = TRUE))
   Sidx <- grep(pattern = subjects, colnames(ACOV), fixed = TRUE)
@@ -584,8 +552,11 @@ CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k,
 
   ## CIs and SEs of ICCs using asymptotic vcov matrix
   ## All info of all ICCs in one list
-  ICCnames <- c("ICCa1", "ICCakhat", "ICCak",
-                "ICCc1", "ICCqkhat", "ICCck")
+
+  ICCnames <- c(
+    "ICC_A1", "ICC_Akhat", "ICC_Ak",
+    "ICC_C1", "ICC_Qkhat", "ICC_Ck"
+  )
 
   ICCdefs <- c("subject / (subject + rater + interaction)",
                "subject / (subject + (rater + interaction)/khat)",
@@ -593,8 +564,10 @@ CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k,
                "subject / (subject + interaction)",
                "subject / (subject + Q*rater + interaction/khat)",
                "subject / (subject + interaction/k)"
-
   )
+
+
+
   names(ICCdefs) <- ICCnames
   ICCs_dm <- do.call("rbind", lapply(ICCdefs, FUN = function(x){
     car::deltaMethod(vars, vcov. = VCOV, level = level,g. = x)
@@ -613,13 +586,15 @@ CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k,
   sigma_mcCIs <- semTools::monteCarloCI(expr = c(S_s = 'S_s', S_r = "S_r", S_sr = "S_sr"),
                                         coefs = sigmas, ACM = VCOV)
   ICC_mcCIs <- semTools::monteCarloCI(expr = c(ICCa1_ci = "S_s / (S_s + S_r + S_sr)",
-                                               ICCak_ci = paste0("S_s / (S_s + (S_r + S_sr)/", k, ")"),
                                                ICCakhat_ci = paste0("S_s / (S_s + (S_r + S_sr)/", khat, ")"),
+                                               ICCak_ci = paste0("S_s / (S_s + (S_r + S_sr)/", k, ")"),
                                                ICCc1_ci = "S_s / (S_s + S_sr)",
-                                               ICCck_ci = paste0("S_s / (S_s + S_sr/", k, ")"),
-                                               ICCqkhat_ci = paste0("S_s / (S_s + ", Q, "*S_r + S_sr/", khat, ")")),
+                                               ICCqkhat_ci = paste0("S_s / (S_s + ", Q, "*S_r + S_sr/", khat, ")"),
+                                               ICCck_ci = paste0("S_s / (S_s + S_sr/", k, ")")),
                                       coefs = sigmas, ACM = VCOV)
 
   ICCs <- cbind(ICC_mcCIs, ICC_ses)
+
+  return(ICCs)
 
 }

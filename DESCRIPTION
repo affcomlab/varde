@@ -1,7 +1,7 @@
 Type: Package
 Package: varde
 Title: Variance Decomposition Functions
-Version: 0.0.1.2
+Version: 0.0.1.3
 Authors@R: c(
     person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre")),
     person("Aaron Matthew", "Simmons",,"amsimmons@ku.edu",role=c("aut")))
@@ -13,6 +13,7 @@ BugReports: https://github.com/jmgirard/varde/issues
 Imports: 
     assertthat,
     brms,
+    car,
     crayon,
     datawizard,
     dplyr,
@@ -22,7 +23,9 @@ Imports:
     ggforce (>= 0.4.0),
     ggplot2,
     lme4,
+    merDeriv,
     rlang,
+    semTools,
     tibble,
     tidyr
 Suggests: 

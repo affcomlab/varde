@@ -212,7 +212,7 @@ calc_q.varde_srm <- function(srm) {
   total_overlap <- sum(apply(X = spairs, MARGIN = 2, FUN = pair_overlap, srm))
 
   # Calculate the proportion of non-overlap across subjects and raters
-  q <- (1 / khat) - (total_overlap / (n * (n - 1)))
+  q <- round((1 / khat) - (total_overlap / (n * (n - 1))),3)
 
   # Return q
   q

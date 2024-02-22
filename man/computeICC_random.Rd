@@ -4,7 +4,7 @@
 \alias{computeICC_random}
 \title{Calculate random effects LME variances into ICC - BETA VERSION}
 \usage{
-computeICC_random(model_fit, subjects = "subjects", k, khat, q)
+computeICC_random(model_fit, subjects = "subjects", k, khat, q, v)
 }
 \arguments{
 \item{model_fit}{The model object from a lme4.}
