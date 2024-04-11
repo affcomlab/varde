@@ -24,21 +24,42 @@ new_icc <- function(iccs_summary = data.frame(),
   stopifnot(is.matrix(vars_posterior))
   stopifnot(is.matrix(ints_posterior))
   stopifnot(is.list(config))
-  stopifnot(inherits(model, "brmsfit"))
+  stopifnot(inherits(model, "brmsfit") || inherits(model, "lmerMod"))
 
-  structure(
-    list(
-      iccs_summary = iccs_summary,
-      vars_summary = vars_summary,
-      ints_summary = ints_summary,
-      iccs_posterior = iccs_posterior,
-      vars_posterior = vars_posterior,
-      ints_posterior = ints_posterior,
-      config = config,
-      model = model
-    ),
-    class = "varde_icc"
-  )
+
+  if (class(model) == "brmsfit") {
+    structure(
+      list(
+        iccs_summary = iccs_summary,
+        vars_summary = vars_summary,
+        ints_summary = ints_summary,
+        iccs_posterior = iccs_posterior,
+        vars_posterior = vars_posterior,
+        ints_posterior = ints_posterior,
+        config = config,
+        model = model
+      ),
+      class = "varde_icc_brms"
+    )
+  } else {
+    structure(
+      list(
+        iccs_summary = iccs_summary,
+        vars_summary = vars_summary,
+        ints_summary = ints_summary,
+        iccs_posterior = iccs_posterior,
+        vars_posterior = vars_posterior,
+        ints_posterior = ints_posterior,
+        config = config,
+        model = model
+      ),
+      class = "varde_icc_lme"
+    )
+
+
+  }
+
+
 }
 
 # S3 Helper
@@ -212,7 +233,7 @@ calc_q.varde_srm <- function(srm) {
   total_overlap <- sum(apply(X = spairs, MARGIN = 2, FUN = pair_overlap, srm))
 
   # Calculate the proportion of non-overlap across subjects and raters
-  q <- round((1 / khat) - (total_overlap / (n * (n - 1))),3)
+  q <- (1 / khat) - (total_overlap / (n * (n - 1)))
 
   # Return q
   q

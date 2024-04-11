@@ -47,7 +47,7 @@ returns a data frame containing a point estimate (\code{y}) and the lower
 \code{\link[ggdist:point_interval]{ggdist::mode_qi()}})}
 
 \item{engine}{A character vector indicating the choice of estimation
-framework (\code{"ANOVA"}, \code{"LME"}, or \code{"BRMS"}). (default = "\code{"BRMS"})}
+framework (\code{"LME"}, or \code{"BRMS"}). (default = "\code{"BRMS"})}
 
 \item{ci}{A finite number between 0 and 1 that represents the width of the
 credible intervals to estimate (e.g., 0.95 = 95\% CI). (default = \code{0.95})}
@@ -79,7 +79,7 @@ each column is an ICC estimate.
 each column is a variance estimate.
 \item \verb{$ints_posterior}: A matrix where each row is a single posterior sample and
 each column is a random intercept estimate.
-\item \verb{$config}: A list containing the specified \code{method}, \code{ci}, and \code{k} values.
+\item \verb{$config}: A list containing the specified \code{method}, \code{ci}, \code{k} values.
 \item \verb{$model}: The brmsfit object created by \code{\link[brms:brm]{brms::brm()}} containing the full
 results of the Bayesian generalizability study.
 }

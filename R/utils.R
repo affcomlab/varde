@@ -91,13 +91,224 @@ get_lmer_ints <- function(m) {
   l <- stats::coef(m)
   l2 <- lapply(l, \(x) datawizard::rownames_as_column(x, var = "id"))
   d <- Reduce(rbind, l2)
+  # dd <- as.data.frame(lme4::ranef(m))
+  #fixef<-
+  # dd_ci <- transform(dd, lower = condval - 1.96*condsd, upper = condval + 1.96*condsd)
   out <- data.frame(
     component = rep(names(l), times = sapply(l2, nrow)),
     term = rep("Intercept", times = nrow(d)),
     id = d$id,
     estimate = d$`(Intercept)`,
+    #lower = dd_ci$lower,
+    #upper = dd_ci$upper
     lower = NA_real_,
     upper = NA_real_
   )
   out
 }
+
+
+
+############################################################################
+## FUNCTIONS TO COMPUTE SIMULATE LME CIs (ten Hove et al, 2022)
+############################################################################
+
+ICC_CIs_LME <-  function(model_fit,
+                     subject,
+                     rater,
+                     ci,
+                     k,
+                     khat,
+                     q){
+  level <- ci
+  khat <- khat$Score
+  Q <- q$Score
+  #two way random effects
+  lme_vars <- lme4::VarCorr(model_fit)
+  S_s <- lme_vars[[subject]][1] #obtain object name
+
+  #get not specified random effects variances
+  ran_eff <- attr(model_fit@flist,"names")
+  ran_eff <- ran_eff[ran_eff != subject]
+  S_r <- lme_vars[[ran_eff]][1]
+
+  #residual/interaction variances
+  S_sr <- (attr(lme4::VarCorr(model_fit), "sc"))^2
+
+  ## List all (and create SDs)
+  sigmas <- c(S_r = S_r, S_s = S_s, S_sr = S_sr)
+  # ICCs <- c(ICCa1 = ICCa1, ICCak = ICCak, ICCakhat = ICCakhat,
+  #           ICCc1 = ICCc1, ICCck = ICCck, ICCqkhat = ICCqkhat)
+
+  ## Asymptotic vcov matrix of sigmas
+  suppressWarnings(ACOV <- merDeriv::vcov.lmerMod(model_fit, full = TRUE))
+  Sidx <- grep(pattern = subject, colnames(ACOV), fixed = TRUE)
+  Ridx <- grep(pattern = rater, colnames(ACOV), fixed = TRUE)
+  SRidx <- which(colnames(ACOV) == "residual")
+  idx      <- c(  Ridx  ,  Sidx  , SRidx  )
+  newNames <- c("rater", "subject", "interaction")
+  VCOV <- ACOV[idx, idx]
+  dimnames(VCOV) <- list(newNames, newNames)
+  vars <- c(rater = S_r, subject = S_s, interaction = S_sr)
+
+  ## CIs and SEs of ICCs using asymptotic vcov matrix
+  ## Monte-Carlo CIs of ICCs
+  ICCnames <- c(
+    "ICC_A1", "ICC_Akhat", "ICC_Ak",
+    "ICC_C1", "ICC_Qkhat", "ICC_Ck"
+  )
+
+  ICCdefs <- c("subject / (subject + rater + interaction)",
+               "subject / (subject + (rater + interaction)/khat)",
+               "subject / (subject + (rater + interaction)/k)",
+               "subject / (subject + interaction)",
+               "subject / (subject + Q*rater + interaction/khat)",
+               "subject / (subject + interaction/k)"
+  )
+
+
+
+  names(ICCdefs) <- ICCnames
+  ICCs_dm <- do.call("rbind", lapply(ICCdefs, FUN = function(x){
+    car::deltaMethod(vars, vcov. = VCOV, level = level,g. = x)
+  }))
+
+  ICC_ses <- ICCs_dm[,"SE"]
+  names(ICC_ses) <- paste0(ICCnames, "_se")
+
+  dimnames(VCOV) <- list(names(sigmas), names(sigmas))
+
+  ICC_mcCIs <- semTools::monteCarloCI(expr = c(ICCa1_ci = "S_s / (S_s + S_r + S_sr)",
+                                               ICCakhat_ci = paste0("S_s / (S_s + (S_r + S_sr)/", khat, ")"),
+                                               ICCak_ci = paste0("S_s / (S_s + (S_r + S_sr)/", k, ")"),
+                                               ICCc1_ci = "S_s / (S_s + S_sr)",
+                                               ICCqkhat_ci = paste0("S_s / (S_s + ", Q, "*S_r + S_sr/", khat, ")"),
+                                               ICCck_ci = paste0("S_s / (S_s + S_sr/", k, ")")),
+                                      coefs = sigmas, ACM = VCOV, append.samples = TRUE)
+ # ICCs <- cbind(ICC_mcCIs, ICC_ses)
+
+  #select ICCs
+
+  nam <- c("ICCa1_ci","ICCakhat_ci","ICCak_ci","ICCc1_ci","ICCqkhat_ci","ICCck_ci")
+
+  ICC_mcCIs$Samples <- dplyr::select(ICC_mcCIs$Samples, nam)
+
+  #rename
+  #colnames(ICC_mcCIs$Samples) <- c(rater, subject, "Residual")
+
+  return(ICC_mcCIs)
+
+
+
+
+
+}
+
+
+varde_CI <- function (model_fit, ci) {
+
+  # TODO: what about one way models?
+ # ci <- 0.95
+
+  #two way random effects
+  lme_vars <- lme4::VarCorr(model_fit)
+  S_s <- lme_vars[[1]][1] #take first random effect
+  subject <- names(lme_vars[1])
+
+  #get not specified random effects variances
+  # ran_eff <- attr(model_fit@flist,"names")
+  # ran_eff <- ran_eff[ran_eff != subject]
+  S_r <- lme_vars[[2]][1] #take second random effect
+  rater <- names(lme_vars[2])
+
+  #residual/interaction variances
+  S_sr <- (attr(lme4::VarCorr(model_fit), "sc"))^2
+
+  ## List all (and create SDs)
+  sigmas <- c(S_r = S_r, S_s = S_s, S_sr = S_sr)
+  # ICCs <- c(ICCa1 = ICCa1, ICCak = ICCak, ICCakhat = ICCakhat,
+  #           ICCc1 = ICCc1, ICCck = ICCck, ICCqkhat = ICCqkhat)
+
+  ## Asymptotic vcov matrix of sigmas
+  suppressWarnings(ACOV <- merDeriv::vcov.lmerMod(model_fit, full = TRUE))
+  Sidx <- grep(pattern = subject, colnames(ACOV), fixed = TRUE)
+  Ridx <- grep(pattern = rater, colnames(ACOV), fixed = TRUE)
+  SRidx <- which(colnames(ACOV) == "residual")
+  idx      <- c(  Ridx  ,  Sidx  , SRidx  )
+  newNames <- c("rater", "subject", "interaction")
+  VCOV <- ACOV[idx, idx]
+  dimnames(VCOV) <- list(newNames, newNames)
+  vars <- c(rater = S_r, subject = S_s, interaction = S_sr)
+
+
+ # MonteCarlo for random effects
+  dimnames(VCOV) <- list(names(sigmas), names(sigmas))
+  sigma_mcCIs <- semTools::monteCarloCI(expr = c(S_r = "S_r", S_s = 'S_s', S_sr = "S_sr"),
+                                        coefs = sigmas, ACM = VCOV, level = ci, append.samples = TRUE)
+
+  #rename rows
+  #rename rows
+  # rownames(sigma_mcCIs)[rownames(sigma_mcCIs) == "S_r"] <- rater
+  # rownames(sigma_mcCIs)[rownames(sigma_mcCIs) == "S_s"] <- subject
+  # rownames(sigma_mcCIs)[rownames(sigma_mcCIs) == "S_sr"] <- "Residual"
+
+  #rename Results
+  rownames(sigma_mcCIs$Results)[rownames(sigma_mcCIs$Results) == "S_r"] <- rater
+  rownames(sigma_mcCIs$Results)[rownames(sigma_mcCIs$Results) == "S_s"] <- subject
+  rownames(sigma_mcCIs$Results)[rownames(sigma_mcCIs$Results) == "S_sr"] <- "Residual"
+
+  #index relevant Samples
+  sigma_mcCIs$Samples <- sigma_mcCIs$Samples[,colnames(sigma_mcCIs$Samples)==c("S_r", "S_s", "S_sr")]
+  colnames(sigma_mcCIs$Samples) <- c(rater, subject, "Residual")
+
+
+
+#
+#   ## Monte-Carlo CIs of ICCs
+#   ICCnames <- c(
+#     "ICC_A1", "ICC_Akhat", "ICC_Ak",
+#     "ICC_C1", "ICC_Qkhat", "ICC_Ck"
+#   )
+#
+#   ICCdefs <- c("subject / (subject + rater + interaction)",
+#                "subject / (subject + (rater + interaction)/khat)",
+#                "subject / (subject + (rater + interaction)/k)",
+#                "subject / (subject + interaction)",
+#                "subject / (subject + Q*rater + interaction/khat)",
+#                "subject / (subject + interaction/k)"
+#   )
+#
+#
+#
+#   names(ICCdefs) <- ICCnames
+#   ICCs_dm <- do.call("rbind", lapply(ICCdefs, FUN = function(x){
+#     car::deltaMethod(vars, vcov. = VCOV, level = level,g. = x)
+#   }))
+#
+#   ICC_ses <- ICCs_dm[,"SE"]
+#   names(ICC_ses) <- paste0(ICCnames, "_se")
+#
+#   dimnames(VCOV) <- list(names(sigmas), names(sigmas))
+#
+#   ICC_mcCIs <- semTools::monteCarloCI(expr = c(ICCa1_ci = "S_s / (S_s + S_r + S_sr)",
+#                                                ICCakhat_ci = paste0("S_s / (S_s + (S_r + S_sr)/", khat, ")"),
+#                                                ICCak_ci = paste0("S_s / (S_s + (S_r + S_sr)/", k, ")"),
+#                                                ICCc1_ci = "S_s / (S_s + S_sr)",
+#                                                ICCqkhat_ci = paste0("S_s / (S_s + ", Q, "*S_r + S_sr/", khat, ")"),
+#                                                ICCck_ci = paste0("S_s / (S_s + S_sr/", k, ")")),
+#                                       coefs = sigmas, ACM = VCOV)
+
+  #ICCs <- cbind(ICC_mcCIs, ICC_ses)
+
+
+  #combine into output list
+ # res <- list(sigma_mcCIs, ICC_mcCIs, ICC_ses)
+
+  return(sigma_mcCIs)
+
+
+
+
+}
+
+

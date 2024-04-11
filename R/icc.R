@@ -117,7 +117,7 @@ create_parseaov <- function(.data, subject, rater, scores, v){
 #'   (`ymin`) and upper (`ymax`) bounds of an interval estimate. (default =
 #'   [ggdist::mode_qi()])
 #' @param engine A character vector indicating the choice of estimation
-#' framework (`"ANOVA"`, `"LME"`, or `"BRMS"`). (default = "`"BRMS"`)
+#' framework (`"LME"`, or `"BRMS"`). (default = "`"BRMS"`)
 #' @param ci A finite number between 0 and 1 that represents the width of the
 #'   credible intervals to estimate (e.g., 0.95 = 95% CI). (default = `0.95`)
 #' @param chains An integer representing the number of Markov chains to use in
@@ -141,7 +141,7 @@ create_parseaov <- function(.data, subject, rater, scores, v){
 #'   each column is a variance estimate.
 #' * `$ints_posterior`: A matrix where each row is a single posterior sample and
 #'   each column is a random intercept estimate.
-#' * `$config`: A list containing the specified `method`, `ci`, and `k` values.
+#' * `$config`: A list containing the specified `method`, `ci`, `k` values.
 #' * `$model`: The brmsfit object created by [brms::brm()] containing the full
 #'   results of the Bayesian generalizability study.
 #' @export
@@ -202,7 +202,10 @@ calc_icc <- function(.data,
   # Count the number of subjects scored by each rater
   nk <- lapply(X = srm, FUN = colSums)
 
-   ### ADD WARNINGS WHEN DATA IS TRIMMED? ####
+  # TODO
+  ## ADD WARNINGS WHEN DATA IS TRIMMED? ####
+  ## fix the output plots for LME objects
+  ## Fix the CI of estimates in LME objects?
 
   # # Remove all subjects that had no raters
   keep <- lapply(ks, function(x) names(x[x > 0])) |>
@@ -218,9 +221,11 @@ calc_icc <- function(.data,
 
   ## Check type of design
   # Balanced or unbalanced
-  # Recall:
+  ##TODO Recall:
   #two-way complete/incomplete and/or balanced/unbalanced designs
   #one-way is special case of incomplete two-way design (balanced no overlap)
+  #tell user which engine
+
 
   balanced <- is_balanced(.data, subject,rater)
   complete <- is_complete(.data, subject,rater)
@@ -247,14 +252,6 @@ calc_icc <- function(.data,
 
   switch(engine,
 
-         "ANOVA" = {
-           formula <- create_parseaov(.data, subject, rater, scores, v)
-
-           fit <- aov(formula = formula,
-                      data = .data)
-
-           iccs_estimats <- computICC_aov(fit,subject)
-         },
 
          "LME" = {
            # Construct mixed-effects formula
@@ -263,37 +260,58 @@ calc_icc <- function(.data,
            fit <- lme4::lmer(formula = formula,
                              data = .data)
 
-           # Check convergence (ten Hove et. al, 2022)
-           checkConv <- function(mod){
-             warn <- mod@optinfo$conv$lme4$messages
-             !is.null(warn) && grepl('failed to converge', warn)
-           }
+           #res <- varde(fit, subject, rater, ci, k, khat, q) #obtain model summaries
 
-           if (checkConv(fit)){
-             stop("Model did not converge")
-           } else {
+           res <- varde(fit, ci=ci) #obtain model summaries
 
-             icc_estimates <- computeICC_random(fit, subject, k, khat, q, v)
+
+           if (check_convergence(fit)){
+           #  icc_est <- computeICC_random(fit, subject, k, khat, q, v)
+
 
              #obtain confidence intervals of ICCs
-             iccs_CIs <- CIs_LME(fit, subject, rater, ci, k, khat, q)
+             ## TODO: What if one way model fit?
+             iccs_CIs <- ICC_CIs_LME(fit, subject, rater, ci, k, khat, q)
 
              #need to take simulated CIs but estimated ICCs
-             iccs_CIs$est <- t(icc_estimates)
+             # build iccs_estimates object equivalent to brms branch
              icc_names <- c(
-               "ICC(A,1)", "ICC(A,khat)", "ICC(A,k)",
-               "ICC(C,1)", "ICC(Q,khat)", "ICC(C,k)"
+               "ICC(A,1)__Score", "ICC(A,khat)__Score",
+               "ICC(A,k)__Score", "ICC(C,1)__Score",
+               "ICC(Q,khat)__Score", "ICC(C,k)__Score"
              )
 
-             rownames(iccs_CIs) <-icc_names
+             #TODO
+             #change this somehow ?
+             #note, you used the simulated data and took point estimates and CIs!
+             method <- ggdist::mean_qi
+
+             iccs_estimates <- get_estimates(iccs_CIs$Samples, method = method, ci = ci)
+             iccs_estimates$term <- icc_names
+
+             # for when u use t(icc_est) instead
+             # iccs_estimates <- data.frame(
+             #   term = icc_names,
+             #   y = t(icc_est),
+             #   ymin = iccs_CIs$ci.lower,
+             #   ymax = iccs_CIs$ci.upper,
+             #   .wdith = rep(ci,length(icc_est)),
+             #   .point = rep("mean",length(icc_est)),
+             #   .interval = rep("CI",length(icc_est))
+
+             #)
+             #rownames(iccs_estimates) <- NULL
+           #  nam <- c("ICCa1_ci","ICCakhat_ci","ICCak_ci","ICCc1_ci","ICCqkhat_ci","ICCck_ci")
+             iccs <-data.matrix(iccs_CIs$Samples)
 
 
 
-
+           } else {
+             stop("Model did not converge")
            }
          },
 
-         "BRMS" = formula <- {
+         "BRMS" = {
            # Construct mixed-effects formula
            formula <- create_parse(.data, subject, rater, scores, v)
            twoway <- is_twoway(.data, subject, rater)
@@ -385,7 +403,8 @@ calc_icc <- function(.data,
 
   iccs_summary <-
     data.frame(
-      term = colnames(iccs),
+     # term = icc_names,
+      term = iccs_estimates$term,
       estimate = iccs_estimates$y,
       lower = iccs_estimates$ymin,
       upper = iccs_estimates$ymax,
@@ -396,9 +415,10 @@ calc_icc <- function(.data,
     dplyr::relocate(score, .before = 1) |>
     dplyr::arrange(score, error, raters)
 
-  if (v == 1) {
-    colnames(iccs) <- icc_names
-  }
+  # if (v == 1) {
+  #   colnames(iccs) <- icc_names
+  # }
+
 
   out <-
     varde_icc(
@@ -412,22 +432,14 @@ calc_icc <- function(.data,
       model = fit
     )
 
+
+
   if (!is.null(file)) {
     try(saveRDS(out, file = file), silent = FALSE)
   }
 
   out
 }
-
-# computeICC_aov() --------------------------------------------------------------
-
-computeICC_aov <- function(model_fit, subjects = "subjects"){
-
-
-
-}
-
-
 
 
 # computeICC_random() --------------------------------------------------------------
@@ -514,87 +526,38 @@ computeICC_random <- function(model_fit, subjects = "subjects", k, khat, q, v){
 
 
 
-############################################################################
-## FUNCTIONS TO COMPUTE SIMULATE LME CIs (ten Hove et al, 2022)
-############################################################################
-
-CIs_LME <-  function(model_fit, subjects = "subjects", raters = "raters", ci, k, khat, Q){
-  level <- ci
-  khat <- khat$Score
-  Q <- Q$Score
-  #two way random effects
-  lme_vars <- lme4::VarCorr(model_fit)
-  S_s <- lme_vars[[subjects]][1] #obtain object name
-
-  #get not specified random effects variances
-  ran_eff <- attr(model_fit@flist,"names")
-  ran_eff <- ran_eff[ran_eff != subjects]
-  S_r <- lme_vars[[ran_eff]][1]
-
-  #residual/interaction variances
-  S_sr <- (attr(lme4::VarCorr(model_fit), "sc"))^2
-
-  ## List all (and create SDs)
-  sigmas <- c(S_s = S_s, S_r = S_r, S_sr = S_sr)
-  # ICCs <- c(ICCa1 = ICCa1, ICCak = ICCak, ICCakhat = ICCakhat,
-  #           ICCc1 = ICCc1, ICCck = ICCck, ICCqkhat = ICCqkhat)
-
-  ## Asymptotic vcov matrix of sigmas
-  suppressWarnings(ACOV <- merDeriv::vcov.lmerMod(model_fit, full = TRUE))
-  Sidx <- grep(pattern = subjects, colnames(ACOV), fixed = TRUE)
-  Ridx <- grep(pattern = raters, colnames(ACOV), fixed = TRUE)
-  SRidx <- which(colnames(ACOV) == "residual")
-  idx      <- c(   Sidx  ,  Ridx  ,  SRidx  )
-  newNames <- c("subject", "rater", "interaction")
-  VCOV <- ACOV[idx, idx]
-  dimnames(VCOV) <- list(newNames, newNames)
-  vars <- c(subject = S_s, rater = S_r, interaction = S_sr)
-
-  ## CIs and SEs of ICCs using asymptotic vcov matrix
-  ## All info of all ICCs in one list
-
-  ICCnames <- c(
-    "ICC_A1", "ICC_Akhat", "ICC_Ak",
-    "ICC_C1", "ICC_Qkhat", "ICC_Ck"
-  )
-
-  ICCdefs <- c("subject / (subject + rater + interaction)",
-               "subject / (subject + (rater + interaction)/khat)",
-               "subject / (subject + (rater + interaction)/k)",
-               "subject / (subject + interaction)",
-               "subject / (subject + Q*rater + interaction/khat)",
-               "subject / (subject + interaction/k)"
-  )
 
 
+## TODO
+# add simulation of CI random effects ----DONE
+# plot rivers for lme varde object ----- DONE
 
-  names(ICCdefs) <- ICCnames
-  ICCs_dm <- do.call("rbind", lapply(ICCdefs, FUN = function(x){
-    car::deltaMethod(vars, vcov. = VCOV, level = level,g. = x)
-  }))
+# you can get CI of sigmas by using calc_icc(which specified raters, objects, q ,etc)
+# but you can't then call varde(res_2) to get a varde object which then calls CIs.?
+# solution: create a branch of CI_LME that extracts model components and does MCMC
+# on the random effects, which doesn't require a specific rater/object distiniction.
+# so basically generalize your inputs that aren't required as null, pull the
+# needed components from the LME model object, so varde() can do it's thing ..
+# then test to see how this would affect the downstream calc_icc() run of CI_LME.
 
-  ICC_ses <- ICCs_dm[,"SE"]
-  names(ICC_ses) <- paste0(ICCnames, "_se")
 
-  sigma_ses <- do.call("rbind", lapply(newNames, FUN = function(x){
-    car::deltaMethod(vars, vcov. = VCOV, level = level,g. = x)
-  }))$SE
-  names(sigma_ses) <- paste0(names(sigmas), "_se")
+# if you do varde(LME), then calc_icc(LME), the results of the CIs sigmas are slightlys different due to
+# simulation variance
 
-  ## Monte-Carlo CIs of variances and ICCs
-  dimnames(VCOV) <- list(names(sigmas), names(sigmas))
-  sigma_mcCIs <- semTools::monteCarloCI(expr = c(S_s = 'S_s', S_r = "S_r", S_sr = "S_sr"),
-                                        coefs = sigmas, ACM = VCOV)
-  ICC_mcCIs <- semTools::monteCarloCI(expr = c(ICCa1_ci = "S_s / (S_s + S_r + S_sr)",
-                                               ICCakhat_ci = paste0("S_s / (S_s + (S_r + S_sr)/", khat, ")"),
-                                               ICCak_ci = paste0("S_s / (S_s + (S_r + S_sr)/", k, ")"),
-                                               ICCc1_ci = "S_s / (S_s + S_sr)",
-                                               ICCqkhat_ci = paste0("S_s / (S_s + ", Q, "*S_r + S_sr/", khat, ")"),
-                                               ICCck_ci = paste0("S_s / (S_s + S_sr/", k, ")")),
-                                      coefs = sigmas, ACM = VCOV)
 
-  ICCs <- cbind(ICC_mcCIs, ICC_ses)
-
-  return(ICCs)
-
-}
+## TODO
+# what stated above is before meeting Jeff. Now here's the direction:
+# 3/29
+# -- WHY IS ICCs plots show Target first, then Residual, then Rater? see screenshot
+#
+# - use the monte-carlo to obtain distributions of the variances.
+# --if only using varde(), obtain the estimates, CI, and plots using these distributions
+# --if using calc_iccs(), then obtain the distributions from varde,
+# do math to obtain both the ICC estimates, CIs, and plots accordingly.
+# -- validate both between the simulations and the analysitic estimates (without the simulations?)
+# -- give user the option to reorder plot rows
+# -Either forcats::fct_reorder(x,wt? = w?), or strings
+# -- give user the option for ICCs to be ploted as bars or distributions.
+# -- change the varde object to have field for "simultions" instead of posterier.
+# -- run small tests()
+# -- check()

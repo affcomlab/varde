@@ -117,32 +117,83 @@ varde.brmsfit <- function(model,
 
 #' @method varde lmerMod
 #' @export
-varde.lmerMod <- function(model, ...) {
-
+varde.lmerMod <- function(model,
+                          method = ggdist::mean_qi,
+                          ci = 0.95) {
+  # does that NULL arguments work if passed already?
   assertthat::assert_that(check_convergence(model) == TRUE)
 
-  vc <- as.data.frame(lme4::VarCorr(model))
+
+
+
+
+ sigma_CI <- varde_CI(model, ci) #simulation results
+
+  #reorder
+ vc <- as.data.frame(lme4::VarCorr(model))
+ vc_row <- vc$grp
+ #sigma_CIs <- sigma_CI$Results[vc_row,]
+
+ # Calculate simulation estimates
+ vars_estimates <- get_estimates(sigma_CI$Samples, method = method, ci = ci)
+ #reorder according to model
+ v <- vars_estimates[match(vars_estimates$term,vc_row),]
+
+ #TODO
+ # use simulation's mean or mode? Curently, tenHove et al (2022)
+ # uses estimate from model as point estimate
+ # but this is not the simulation's mode.
 
   # Construct variances summary tibble
   vars_summary <-
     data.frame(
-      component = vc$grp,
+      component = v$term,
       term = "Variance",
-      estimate = vc$vcov,
-      percent = vc$vcov / sum(vc$vcov)
-    )
+      estimate = v$y,
+      lower = v$ymin,
+      upper = v$ymax,
+      percent = v$y / sum(v$y)
+      )
+
+  #need the samples as matrices
+  dat_sim <- data.matrix(sigma_CI$Samples)
 
   varde_res(
     vars_summary = vars_summary,
-    vars_posterior = matrix(),
+    vars_posterior = dat_sim,
     ints_summary = get_lmer_ints(model),
     ints_posterior = matrix(),
+    config = list(method = method, ci = ci),
     model = model
   )
 }
 
-#' @method varde varde_icc
+#' @method varde varde_icc_brms
 #' @export
-varde.varde_icc <- function(x, ...) {
+varde.varde_icc_brms <- function(x, ...) {
   varde(x$model, method = x$config$method, ci = x$config$ci)
+}
+
+
+#' @method varde varde_icc_lme
+#' @export
+varde.varde_icc_lme <- function(x, ...) {
+  #reformat summaries since no need to rerun Monte Carlo simulations
+
+   model <- x$model
+   method <- x$config$method
+   ci = x$config$ci
+
+  vars_summary <- x$vars_summary
+
+  varde_res(
+    vars_summary = vars_summary,
+    vars_posterior = x$vars_posterior,
+    ints_summary = get_lmer_ints(model),
+    ints_posterior = matrix(),
+    config = list(method = method, ci = ci),
+    model = model
+  )
+
+
 }
