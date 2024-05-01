@@ -250,7 +250,7 @@ calc_icc.data.frame <- function(.data,
     }
 
   #check if varde_res is provided
-  if (class(varde) == "varde_res") {
+  if (class(varde)[1] == "varde_res") {
 
     out <- calc_icc(varde, rater, subject, scores, k, khat, q, ci, file)
     return(out)
