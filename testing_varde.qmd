@@ -1,0 +1,137 @@
+---
+title: "testing_varde"
+format: html
+---
+
+# Load Data
+```{r}
+library(varde)
+ppa_type1 <- ppa[ppa$Type == 1, ]
+```
+
+
+
+# Bayesian 
+
+## Fitted Brms model to varde_res
+
+```{r}
+fit_brm <- brms::brm(
+    formula = Score ~ 1 + (1 | Target) + (1 | Rater),
+    data = ppa_type1,
+    chains = 4,
+    cores = 4,
+    init = "random",
+    warmup = 5000,
+    iter = 10000,
+    seed = 2022,
+    file = "m57"
+)
+
+
+
+
+```
+
+## fit varde object
+
+```{r}
+#Quick: doesn't need to run posterior
+varde_brm <- varde(fit_brm)
+
+
+```
+
+```{r}
+class(varde_brm)
+
+#print
+varde_brm
+
+#river plot 
+plot(varde_brm)
+```
+
+
+## varde object to calc_icc 
+
+```{r}
+# needs the .data to get khat, q, values from srm
+# passing a varde object so no need to re-run posterier 
+icc_brm <-  calc_icc(
+    .data = ppa_type1, 
+    subject = "Target",
+    rater = "Rater",
+    scores = "Score",
+    k = 12,
+    varde = varde_brm
+)
+
+class(icc_brm)
+```
+
+```{r}
+plot(icc_brm)
+
+```
+## varde_icc back to varde object 
+```{r}
+back_to_varde_brm <- varde(icc_brm)
+plot(back_to_varde_brm)
+
+```
+
+# Frequentist
+
+## Fitted LMER model to varde_res
+
+```{r}
+fit_lme <- lme4::lmer(
+    formula = Score ~ 1 + (1 | Target) + (1 | Rater),
+    data = ppa_type1,
+)
+
+varde_lme <- varde(fit_lme)
+
+```
+
+
+```{r}
+class(varde_lme)
+varde_lme
+
+plot(varde_lme)
+```
+
+## varde object to calc_icc
+
+```{r}
+# needs the .data to get khat, q, values from srm
+# passing a varde object so no need to re-run posterier 
+icc_lme <-  calc_icc(
+    .data = ppa_type1, 
+    subject = "Target",
+    rater = "Rater",
+    scores = "Score",
+    k = 12,
+    varde = varde_lme
+)
+
+class(icc_lme)
+```
+
+```{r}
+
+plot(icc_lme)
+```
+```{r}
+plot(icc_lme, type = "slab")
+```
+
+## varde_icc back to varde object 
+
+```{r}
+back_to_varde_lme <- varde(icc_lme)
+plot(back_to_varde_lme)
+```
+

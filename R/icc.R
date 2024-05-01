@@ -135,17 +135,18 @@ create_parseaov <- function(.data, subject, rater, scores, v){
 #'   each variance estimate.
 #' * `$ints_summary`: A [tibble::tibble()] containing summary information about
 #'   each random intercept estimate.
-#' * `$iccs_posterior`: A matrix where each row is a single posterior sample and
+#' * `$iccs_samples`: A matrix where each row is a single posterior sample and
 #'   each column is an ICC estimate.
-#' * `$vars_posterior`: A matrix where each row is a single posterior sample and
+#' * `$vars_samples`: A matrix where each row is a single posterior sample and
 #'   each column is a variance estimate.
-#' * `$ints_posterior`: A matrix where each row is a single posterior sample and
+#' * `$ints_samples`: A matrix where each row is a single posterior sample and
 #'   each column is a random intercept estimate.
 #' * `$config`: A list containing the specified `method`, `ci`, `k` values.
 #' * `$model`: The brmsfit object created by [brms::brm()] containing the full
 #'   results of the Bayesian generalizability study.
+#' @method calc_icc data.frame
 #' @export
-calc_icc <- function(.data,
+calc_icc.data.frame <- function(.data,
                      subject = "subject",
                      rater = "rater",
                      scores = c("score1", "score2"),
@@ -156,6 +157,7 @@ calc_icc <- function(.data,
                      chains = 4,
                      iter = 5000,
                      file = NULL,
+                     varde = matrix(),
                      ...) {
 
   assertthat::assert_that(
@@ -247,6 +249,12 @@ calc_icc <- function(.data,
       q <- 1/k #since sigmaR cannot be distinguished
     }
 
+  #check if varde_res is provided
+  if (class(varde) == "varde_res") {
+
+    out <- calc_icc(varde, rater, subject, scores, k, khat, q, ci, file)
+    return(out)
+  }
 
   #Branch engine cases
 
@@ -330,21 +338,21 @@ calc_icc <- function(.data,
 
            # Extract posterior draws as matrices
            if (v > 1) {
-             vs <- res$vars_posterior[, paste(subject, bname(scores), sep = "__")]
+             vs <- res$vars_samples[, paste(subject, bname(scores), sep = "__")]
              if (twoway) {
-               vr <- res$vars_posterior[, paste(rater, bname(scores), sep = "__")]
+               vr <- res$vars_samples[, paste(rater, bname(scores), sep = "__")]
              } else {
                vr <- rep(NA_real_, length(vs))
              }
-             vsr <- res$vars_posterior[, paste("Residual", bname(scores), sep = "__")]
+             vsr <- res$vars_samples[, paste("Residual", bname(scores), sep = "__")]
            } else {
-             vs <- res$vars_posterior[, subject]
+             vs <- res$vars_samples[, subject]
              if (twoway) {
-               vr <- res$vars_posterior[, rater]
+               vr <- res$vars_samples[, rater]
              } else {
                vr <- rep(NA_real_, length(vs))
              }
-             vsr <- res$vars_posterior[, "Residual"]
+             vsr <- res$vars_samples[, "Residual"]
            }
 
            colnames(vs) <- scores
@@ -425,9 +433,9 @@ calc_icc <- function(.data,
       iccs_summary = iccs_summary,
       vars_summary = res$vars_summary,
       ints_summary = res$ints_summary,
-      iccs_posterior = iccs,
-      vars_posterior = res$vars_posterior,
-      ints_posterior = res$ints_posterior,
+      iccs_samples = iccs,
+      vars_samples = res$vars_samples,
+      ints_samples = res$ints_samples,
       config = list(method = method, ci = ci, k = k),
       model = fit
     )
@@ -441,6 +449,129 @@ calc_icc <- function(.data,
   out
 }
 
+
+#' @method calc_icc varde_res
+#' @export
+calc_icc.varde_res <- function(res, rater, subject, scores, k, khat, q, ci, file) {
+  #this is written for the case of varde() called prior to calc_icc()
+  if (class(res$model) == "lmerMod") {
+    method <- ggdist::mean_qi
+  } else{
+      method <- ggdist::mode_qi
+  }
+
+  # # Extract MC samples from object
+  # res <- varde(fit, ci = ci)
+  #
+  # Extract MC sample draws as matrices
+  v <- 1
+  if (v > 1) {
+    vs <- res$vars_samples[, paste(subject, bname(scores), sep = "__")]
+    if (twoway) {
+      vr <- res$vars_samples[, paste(rater, bname(scores), sep = "__")]
+    } else {
+      vr <- rep(NA_real_, length(vs))
+    }
+    vsr <- res$vars_samples[, paste("Residual", bname(scores), sep = "__")]
+  } else {
+    vs <- as.matrix(res$vars_samples[, subject])
+    #TODO: twoway?
+    # if (twoway) {
+      vr <- as.matrix(res$vars_samples[, rater])
+    # } else {
+    #   vr <- rep(NA_real_, length(vs))
+    # }
+    vsr <- as.matrix(res$vars_samples[, "Residual"])
+  }
+
+  colnames(vs) <- scores
+  colnames(vr) <- scores
+  colnames(vsr) <- scores
+
+  # # Calculate the harmonic mean of the number of raters per subject
+  # khat <- lapply(srm, calc_khat)
+  #
+  # # Calculate the proportion of non-overlap for raters and subjects
+  # q <- lapply(srm, calc_q)
+
+  # Make matrices for k, khat, and q
+  kmat <- matrix(rep(k, times = v * nrow(vs)), ncol = v, byrow = TRUE)
+  khatmat <- matrix(
+    rep(unlist(khat), times = nrow(vs)),
+    ncol = v,
+    byrow = TRUE
+  )
+
+  qmat <- matrix(
+    rep(unlist(q), times = nrow(vs)),
+    ncol = v,
+    byrow = TRUE
+  )
+
+  # Calculate posterior for each intraclass correlation coefficient
+  iccs <- cbind(
+    vs / (vs + vr + vsr),
+    vs / (vs + (vr + vsr) / khatmat),
+    vs / (vs + (vr + vsr) / kmat),
+    vs / (vs + vsr),
+    vs / (vs + qmat * vr + vsr / khatmat),
+    vs / (vs + vsr / kmat)
+  )
+  icc_names <- c(
+    "ICC(A,1)", "ICC(A,khat)", "ICC(A,k)",
+    "ICC(C,1)", "ICC(Q,khat)", "ICC(C,k)"
+  )
+  colnames(iccs) <- paste(
+    rep(icc_names, each = v),
+    colnames(iccs),
+    sep = "__"
+  )
+
+  # Construct ICC output tibble
+  iccs_estimates <- get_estimates(iccs, method = method, ci = ci)
+
+
+  iccs_summary <-
+    data.frame(
+      # term = icc_names,
+      term = iccs_estimates$term,
+      estimate = iccs_estimates$y,
+      lower = iccs_estimates$ymin,
+      upper = iccs_estimates$ymax,
+      raters = rep(c(rep(1, v), unlist(khat), rep(k, v)), times = 2),
+      error = rep(c("Absolute", "Relative"), each = v * 3)
+    ) |>
+    tidyr::separate(col = term, into = c("term", "score"), sep = "__") |>
+    dplyr::relocate(score, .before = 1) |>
+    dplyr::arrange(score, error, raters)
+
+  # if (v == 1) {
+  #   colnames(iccs) <- icc_names
+  # }
+
+
+  out <-
+    varde_icc(
+      iccs_summary = iccs_summary,
+      vars_summary = res$vars_summary,
+      ints_summary = res$ints_summary,
+      iccs_samples = iccs,
+      vars_samples = res$vars_samples,
+      ints_samples = res$ints_samples,
+      config = list(method = method, ci = ci, k = k),
+      model = res$model
+    )
+
+
+
+  if (!is.null(file)) {
+    try(saveRDS(out, file = file), silent = FALSE)
+  }
+
+  out
+
+
+}
 
 # computeICC_random() --------------------------------------------------------------
 

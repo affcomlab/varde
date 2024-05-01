@@ -7,3 +7,4 @@
 .DS_Store
 README_cache/
 m*.rds
+inst/doc

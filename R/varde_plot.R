@@ -143,3 +143,6 @@ plot.varde_res <- function(x,
 
   out
 }
+
+# TODO
+# plot intercepts for LME branch?

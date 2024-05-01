@@ -8,15 +8,15 @@ varde <- function(model, ...) {
 #' @exportClass verde_res
 new_varde_res <- function(vars_summary = data.frame(),
                           ints_summary = data.frame(),
-                          vars_posterior = matrix(),
-                          ints_posterior = matrix(),
+                          vars_samples = matrix(),
+                          ints_samples = matrix(),
                           config = list(),
                           model = list()) {
 
   stopifnot(is.data.frame(vars_summary))
   stopifnot(is.data.frame(ints_summary))
-  stopifnot(is.matrix(vars_posterior))
-  stopifnot(is.matrix(ints_posterior))
+  stopifnot(is.matrix(vars_samples))
+  stopifnot(is.matrix(ints_samples))
   stopifnot(is.list(config))
   stopifnot(inherits(model, "brmsfit") || inherits(model, "lmerMod"))
 
@@ -24,8 +24,8 @@ new_varde_res <- function(vars_summary = data.frame(),
     list(
       vars_summary = vars_summary,
       ints_summary = ints_summary,
-      vars_posterior = vars_posterior,
-      ints_posterior = ints_posterior,
+      vars_samples = vars_samples,
+      ints_samples = ints_samples,
       config = config,
       model = model
     ),
@@ -36,15 +36,15 @@ new_varde_res <- function(vars_summary = data.frame(),
 # S3 Helper
 varde_res <- function(vars_summary = data.frame(),
                       ints_summary = data.frame(),
-                      vars_posterior = matrix(),
-                      ints_posterior = matrix(),
+                      vars_samples = matrix(),
+                      ints_samples = matrix(),
                       config = list(),
                       model = list()) {
   new_varde_res(
     vars_summary,
     ints_summary,
-    vars_posterior,
-    ints_posterior,
+    vars_samples,
+    ints_samples,
     config,
     model
   )

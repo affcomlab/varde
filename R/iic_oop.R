@@ -11,53 +11,67 @@ new_srm <- function(x, ...) {
 new_icc <- function(iccs_summary = data.frame(),
                     vars_summary = data.frame(),
                     ints_summary = data.frame(),
-                    iccs_posterior = matrix(),
-                    vars_posterior = matrix(),
-                    ints_posterior = matrix(),
+                    iccs_samples = matrix(),
+                    vars_samples = matrix(),
+                    ints_samples = matrix(),
                     config = list(),
                     model = list()) {
 
   stopifnot(is.data.frame(iccs_summary))
   stopifnot(is.data.frame(vars_summary))
   stopifnot(is.data.frame(ints_summary))
-  stopifnot(is.matrix(iccs_posterior))
-  stopifnot(is.matrix(vars_posterior))
-  stopifnot(is.matrix(ints_posterior))
+  stopifnot(is.matrix(iccs_samples))
+  stopifnot(is.matrix(vars_samples))
+  stopifnot(is.matrix(ints_samples))
   stopifnot(is.list(config))
   stopifnot(inherits(model, "brmsfit") || inherits(model, "lmerMod"))
 
+#
+#   if (class(model) == "brmsfit") {
+#     structure(
+#       list(
+#         iccs_sampless_summary = iccs_sampless_summary,
+#         vars_summary = vars_summary,
+#         ints_summary = ints_summary,
+#         iccs_samples = iccs_samples,
+#         vars_samples = vars_samples,
+#         ints_samples = ints_samples,
+#         config = config,
+#         model = model
+#       ),
+#       class = "varde_iccs_samples_brms"
+#     )
+#   } else {
+#     structure(
+#       list(
+#         iccs_sampless_summary = iccs_sampless_summary,
+#         vars_summary = vars_summary,
+#         ints_summary = ints_summary,
+#         iccs_samples = iccs_samples,
+#         vars_samples = vars_samples,
+#         ints_samples = ints_samples,
+#         config = config,
+#         model = model
+#       ),
+#       class = "varde_iccs_samples_lme"
+#     )
+#
+#
+#   }
 
-  if (class(model) == "brmsfit") {
-    structure(
-      list(
-        iccs_summary = iccs_summary,
-        vars_summary = vars_summary,
-        ints_summary = ints_summary,
-        iccs_posterior = iccs_posterior,
-        vars_posterior = vars_posterior,
-        ints_posterior = ints_posterior,
-        config = config,
-        model = model
-      ),
-      class = "varde_icc_brms"
-    )
-  } else {
-    structure(
-      list(
-        iccs_summary = iccs_summary,
-        vars_summary = vars_summary,
-        ints_summary = ints_summary,
-        iccs_posterior = iccs_posterior,
-        vars_posterior = vars_posterior,
-        ints_posterior = ints_posterior,
-        config = config,
-        model = model
-      ),
-      class = "varde_icc_lme"
-    )
-
-
-  }
+  structure(
+    list(
+      iccs_summary = iccs_summary,
+      vars_summary = vars_summary,
+      ints_summary = ints_summary,
+      iccs_samples = iccs_samples,
+      vars_samples = vars_samples,
+      ints_samples = ints_samples,
+      config = config,
+      model = model
+    ),
+    class = "varde_icc"
+  )
 
 
 }
@@ -66,9 +80,9 @@ new_icc <- function(iccs_summary = data.frame(),
 varde_icc <- function(iccs_summary = data.frame(),
                       vars_summary = data.frame(),
                       ints_summary = data.frame(),
-                      iccs_posterior = matrix(),
-                      vars_posterior = matrix(),
-                      ints_posterior = matrix(),
+                      iccs_samples = matrix(),
+                      vars_samples = matrix(),
+                      ints_samples = matrix(),
                       config = list(),
                       model = list()) {
 
@@ -76,9 +90,9 @@ varde_icc <- function(iccs_summary = data.frame(),
     iccs_summary,
     vars_summary,
     ints_summary,
-    iccs_posterior,
-    vars_posterior,
-    ints_posterior,
+    iccs_samples,
+    vars_samples,
+    ints_samples,
     config,
     model
   )
@@ -100,6 +114,13 @@ calc_ks <- function(x, ...) {
 calc_q <- function(x, ...) {
   UseMethod("calc_q")
 }
+
+#' @export
+calc_icc <- function(x, ...) {
+  UseMethod("calc_icc")
+}
+
+
 
 # S3 Methods --------------------------------------------------------------
 
@@ -262,7 +283,7 @@ calc_q.data.frame <- function(.data,
 #' @export print.varde_icc
 #' @export
 print.varde_icc <- function(x, variances = TRUE, intercepts = TRUE, ...) {
-  cat(crayon::blue("# ICC Estimates\n"))
+  cat(crayon::blue("# iccs_samples Estimates\n"))
   print(x$iccs_summary, ...)
   if (variances) {
     cat(crayon::blue("\n# Variance Estimates\n"))
@@ -277,11 +298,11 @@ print.varde_icc <- function(x, variances = TRUE, intercepts = TRUE, ...) {
 #' @export summary.varde_icc
 #' @export
 summary.varde_icc <- function(x,
-                              which = "iccs",
+                              which = "iccs_samples",
                               ...) {
 
-  match.arg(which, choices = c("iccs", "variances", "intercepts", "model"))
-  if (which == "iccs") {
+  match.arg(which, choices = c("iccs_samples", "variances", "intercepts", "model"))
+  if (which == "iccs_samples") {
     out <- x$iccs_summary
   } else if (which == "variances") {
     out <- x$vars_summary

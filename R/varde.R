@@ -107,9 +107,9 @@ varde.brmsfit <- function(model,
 
   varde_res(
     vars_summary = vars_summary,
-    vars_posterior = vars,
+    vars_samples = vars,
     ints_summary = ints_summary,
-    ints_posterior = ints,
+    ints_samples = ints,
     config = list(method = method, ci = ci),
     model = model
   )
@@ -160,40 +160,84 @@ varde.lmerMod <- function(model,
 
   varde_res(
     vars_summary = vars_summary,
-    vars_posterior = dat_sim,
+    vars_samples = dat_sim,
     ints_summary = get_lmer_ints(model),
-    ints_posterior = matrix(),
+    ints_samples = matrix(),
     config = list(method = method, ci = ci),
     model = model
   )
 }
 
-#' @method varde varde_icc_brms
+#' @method varde varde_icc
 #' @export
-varde.varde_icc_brms <- function(x, ...) {
-  varde(x$model, method = x$config$method, ci = x$config$ci)
+varde.varde_icc <- function(x, ...) {
+
+  if (class(x$model) == "lmerMod") {
+    #no need to rerun simulations
+    method <- x$config$method
+    ci <- x$config$ci
+
+    vc <- as.data.frame(lme4::VarCorr(x$model))
+    vc_row <- vc$grp
+    #sigma_CIs <- sigma_CI$Results[vc_row,]
+
+    # Calculate simulation estimates
+    vars_estimates <- get_estimates(x$vars_samples, method = method, ci = ci)
+    #reorder according to model
+    v <- vars_estimates[match(vars_estimates$term,vc_row),]
+
+    #TODO
+    # use simulation's mean or mode? Curently, tenHove et al (2022)
+    # uses estimate from model as point estimate
+    # but this is not the simulation's mode.
+
+    # Construct variances summary tibble
+    vars_summary <-
+      data.frame(
+        component = v$term,
+        term = "Variance",
+        estimate = v$y,
+        lower = v$ymin,
+        upper = v$ymax,
+        percent = v$y / sum(v$y)
+      )
+
+    #need the samples as matrices
+    dat_sim <- data.matrix(x$vars_samples)
+
+    varde_res(
+      vars_summary = vars_summary,
+      vars_samples = dat_sim,
+      ints_summary = get_lmer_ints(x$model),
+      ints_samples = matrix(),
+      config = list(method = method, ci = ci),
+      model = x$model
+    )
+
+
+  } else {
+    varde(x$model, method = x$config$method, ci = x$config$ci)
+  }
 }
 
-
-#' @method varde varde_icc_lme
-#' @export
-varde.varde_icc_lme <- function(x, ...) {
-  #reformat summaries since no need to rerun Monte Carlo simulations
-
-   model <- x$model
-   method <- x$config$method
-   ci = x$config$ci
-
-  vars_summary <- x$vars_summary
-
-  varde_res(
-    vars_summary = vars_summary,
-    vars_posterior = x$vars_posterior,
-    ints_summary = get_lmer_ints(model),
-    ints_posterior = matrix(),
-    config = list(method = method, ci = ci),
-    model = model
-  )
-
-
-}
+#'
+#' varde.varde_icc_lme <- function(x, ...) {
+#'   #reformat summaries since no need to rerun Monte Carlo simulations
+#'
+#'    model <- x$model
+#'    method <- x$config$method
+#'    ci = x$config$ci
+#'
+#'   vars_summary <- x$vars_summary
+#'
+#'   varde_res(
+#'     vars_summary = vars_summary,
+#'     vars_samples = x$vars_samples,
+#'     ints_summary = get_lmer_ints(model),
+#'     ints_samples = matrix(),
+#'     config = list(method = method, ci = ci),
+#'     model = model
+#'   )
+#'
+#'
+#' }
