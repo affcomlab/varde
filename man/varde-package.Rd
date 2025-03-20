@@ -11,13 +11,18 @@ Functions for doing variance decomposition, e.g., for conducting generalizabilit
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/jmgirard/varde}
-  \item Report bugs at \url{https://github.com/jmgirard/varde/issues}
+  \item \url{https://github.com/affcomlab/varde}
+  \item Report bugs at \url{https://github.com/affcomlab/varde/issues}
 }
 
 }
 \author{
 \strong{Maintainer}: Jeffrey Girard \email{me@jmgirard.com}
+
+Authors:
+\itemize{
+  \item Aaron Simmons
+}
 
 }
 \keyword{internal}

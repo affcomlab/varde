@@ -2,14 +2,17 @@ Type: Package
 Package: varde
 Title: Variance Decomposition Functions
 Version: 0.0.1
-Authors@R: 
-    person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre"))
+Authors@R:
+    c(
+        person("Jeffrey", "Girard", , "me@jmgirard.com", role = c("aut", "cre")),
+        person("Aaron", "Simmons", , "", role = "aut")
+    )
 Description: Functions for doing variance decomposition, e.g., for
     conducting generalizability studies or estimating intraclass correlations.
 License: MIT + file LICENSE
-URL: https://github.com/jmgirard/varde
-BugReports: https://github.com/jmgirard/varde/issues
-Imports: 
+URL: https://github.com/affcomlab/varde
+BugReports: https://github.com/affcomlab/varde/issues
+Imports:
     assertthat,
     brms,
     crayon,
@@ -24,7 +27,7 @@ Imports:
     rlang,
     tibble,
     tidyr
-Suggests: 
+Suggests:
     Matrix,
     plotly,
     rstan,
@@ -33,6 +36,6 @@ Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
-Depends: 
+RoxygenNote: 7.3.2
+Depends:
     R (>= 2.10)
